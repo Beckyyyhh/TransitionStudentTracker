@@ -13,6 +13,7 @@ export const TASK_CATEGORIES = [
 
 export const REFERRER_OPTIONS = [
   "Self-referred",
+  "Deputy",
   "Head Teacher",
   "Year Adviser",
   "Class Teacher",
