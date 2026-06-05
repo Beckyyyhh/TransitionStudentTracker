@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f9f9fd;
+  --foreground: #1a1a2e;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-open-sans), Open Sans, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-nunito), Nunito, sans-serif;
+}
