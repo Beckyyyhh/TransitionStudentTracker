@@ -35,9 +35,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 alt="Canley Vale HS Careers Hub"
                 style={{ height: 96, width: "auto", objectFit: "contain" }}
               />
-              <span className="text-xl font-extrabold leading-tight hidden sm:block" style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}>
-                Canley Vale HS<br />
-                <span className="text-base font-semibold" style={{ color: "#534ab7" }}>Careers Hub</span>
+              <span className="leading-tight hidden sm:block" style={{ fontFamily: "var(--font-nunito), sans-serif" }}>
+                <span className="text-xl font-extrabold" style={{ color: "#26215c" }}>Canley Vale HS</span><br />
+                <span className="text-base font-semibold" style={{ color: "#534ab7" }}>Careers Hub</span><br />
+                <span className="text-sm font-semibold" style={{ color: "#afa9ec" }}>Transition Student Tracking</span>
               </span>
             </Link>
           </div>
