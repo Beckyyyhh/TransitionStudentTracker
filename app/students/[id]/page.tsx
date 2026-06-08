@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { StudentProfileTabs } from "@/components/StudentProfileTabs";
+import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,8 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                 <p className="mt-3 text-purple-100 text-sm max-w-xl">{student.notes}</p>
               )}
             </div>
+            <div className="flex flex-col items-end gap-3">
+              <DeleteStudentButton studentId={student.id} />
             <div className="flex gap-4 text-center">
               <div>
                 <div className="text-3xl font-extrabold">{student.tasks.length}</div>
@@ -52,6 +55,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                 <div className="text-3xl font-extrabold">{historyTasks.length}</div>
                 <div className="text-purple-200 text-xs">Completed</div>
               </div>
+            </div>
             </div>
           </div>
         </div>
