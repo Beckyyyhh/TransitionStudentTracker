@@ -18,8 +18,7 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      router.push("/students");
-      router.refresh();
+      window.location.href = "/students";
     } else {
       toast.error("Incorrect password");
       setLoading(false);
