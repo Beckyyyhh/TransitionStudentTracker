@@ -14,7 +14,7 @@ export default async function StudentsPage({
 
   const students = await prisma.student.findMany({
     include: { tasks: true },
-    orderBy: { lastName: "asc" },
+    orderBy: [{ year: "asc" }, { lastName: "asc" }],
     where: {
       ...(year ? { year: parseInt(year) } : {}),
       ...(q
@@ -28,6 +28,29 @@ export default async function StudentsPage({
         : {}),
     },
   });
+
+  const grouped = !year && !q
+    ? students.reduce<Record<number, typeof students>>((acc, s) => {
+        (acc[s.year] ??= []).push(s);
+        return acc;
+      }, {})
+    : null;
+
+  const StudentGrid = ({ list }: { list: typeof students }) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {list.map((s) => (
+        <StudentCard
+          key={s.id}
+          id={s.id}
+          firstName={s.firstName}
+          lastName={s.lastName}
+          year={s.year}
+          referrer={s.referrer}
+          taskCount={s.tasks.length}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -55,20 +78,19 @@ export default async function StudentsPage({
         <div className="bg-white rounded-xl p-12 text-center text-gray-400" style={{ border: "1px solid #afa9ec" }}>
           No students found. <a href="/students/new" style={{ color: "#3d2c8d" }} className="underline">Add the first one.</a>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {students.map((s) => (
-            <StudentCard
-              key={s.id}
-              id={s.id}
-              firstName={s.firstName}
-              lastName={s.lastName}
-              year={s.year}
-              referrer={s.referrer}
-              taskCount={s.tasks.length}
-            />
+      ) : grouped ? (
+        <div className="space-y-8">
+          {Object.entries(grouped).map(([yr, list]) => (
+            <div key={yr}>
+              <h2 className="text-lg font-extrabold mb-3" style={{ color: "#3d2c8d", fontFamily: "var(--font-nunito), sans-serif" }}>
+                Year {yr} <span className="text-sm font-semibold text-gray-400">— {list.length} student{list.length !== 1 ? "s" : ""}</span>
+              </h2>
+              <StudentGrid list={list} />
+            </div>
           ))}
         </div>
+      ) : (
+        <StudentGrid list={students} />
       )}
     </div>
   );
