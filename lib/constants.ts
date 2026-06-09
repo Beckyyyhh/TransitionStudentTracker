@@ -19,6 +19,7 @@ export const REFERRER_OPTIONS = [
   "Class Teacher",
   "Parent/Carer",
   "School Counsellor",
+  "Wellbeing Team",
   "LOTE/EAL/D",
   "Other",
 ] as const;
