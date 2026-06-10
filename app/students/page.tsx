@@ -20,9 +20,9 @@ export default async function StudentsPage({
       ...(q
         ? {
             OR: [
-              { firstName: { contains: q } },
-              { lastName: { contains: q } },
-              { referrer: { contains: q } },
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { referrer: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
