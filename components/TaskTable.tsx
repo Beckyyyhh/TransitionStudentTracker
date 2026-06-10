@@ -10,7 +10,7 @@ type Task = {
   status: string;
   date: string;
   notes: string;
-  updatedAt?: string;
+  updatedAt?: string | Date;
   student?: { firstName: string; lastName: string };
 };
 
