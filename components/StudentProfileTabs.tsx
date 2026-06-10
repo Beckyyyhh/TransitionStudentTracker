@@ -56,7 +56,12 @@ export function StudentProfileTabs({
 
       {tab === "history" && (
         <div className="bg-white">
-          <TaskTable tasks={historyTasks} showUpdatedAt />
+          <TaskTable
+            tasks={[...historyTasks].sort((a, b) =>
+              new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime()
+            )}
+            showUpdatedAt
+          />
         </div>
       )}
 
