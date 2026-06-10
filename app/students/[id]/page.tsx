@@ -10,7 +10,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const id = parseInt(idStr);
   const student = await prisma.student.findUnique({
     where: { id },
-    include: { tasks: { orderBy: { createdAt: "desc" } } },
+    include: { tasks: { orderBy: { updatedAt: "desc" } } },
   });
 
   if (!student) notFound();
