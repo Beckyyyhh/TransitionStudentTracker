@@ -15,12 +15,18 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
   if (!student) notFound();
 
-  const activeTasks = student.tasks
-    .filter((t) => t.status !== "COMPLETED")
-    .map((t) => ({ ...t, updatedAt: t.updatedAt.toISOString() }));
-  const historyTasks = student.tasks
-    .filter((t) => t.status === "COMPLETED")
-    .map((t) => ({ ...t, updatedAt: t.updatedAt.toISOString() }));
+  const serializeTask = (t: typeof student.tasks[number]) => ({
+    id: t.id,
+    title: t.title,
+    category: t.category,
+    status: t.status,
+    date: t.date,
+    notes: t.notes,
+    updatedAt: t.updatedAt.toISOString(),
+  });
+
+  const activeTasks = student.tasks.filter((t) => t.status !== "COMPLETED").map(serializeTask);
+  const historyTasks = student.tasks.filter((t) => t.status === "COMPLETED").map(serializeTask);
 
   return (
     <div className="space-y-6">
