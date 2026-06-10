@@ -20,18 +20,23 @@ export default async function HistoryPage({
         ...(status ? { status } : {}),
       },
       include: { student: true },
-      orderBy: [{ studentId: "asc" }, { createdAt: "desc" }],
+      orderBy: { updatedAt: "desc" },
     }),
   ]);
 
-  // Group by student
-  const grouped = new Map<number, { student: { firstName: string; lastName: string; year: number }; tasks: typeof tasks }>();
+  // Group by student, preserving updatedAt desc order within each group
+  const grouped = new Map<number, { student: { firstName: string; lastName: string; year: number }; tasks: typeof tasks; latestUpdatedAt: Date }>();
   for (const task of tasks) {
     if (!grouped.has(task.studentId)) {
-      grouped.set(task.studentId, { student: task.student, tasks: [] });
+      grouped.set(task.studentId, { student: task.student, tasks: [], latestUpdatedAt: task.updatedAt });
     }
     grouped.get(task.studentId)!.tasks.push(task);
   }
+
+  // Sort student groups by most recently updated task
+  const sortedGroups = Array.from(grouped.values()).sort(
+    (a, b) => b.latestUpdatedAt.getTime() - a.latestUpdatedAt.getTime()
+  );
 
   return (
     <div>
@@ -52,7 +57,7 @@ export default async function HistoryPage({
         </div>
       ) : (
         <div className="space-y-6">
-          {Array.from(grouped.values()).map(({ student, tasks: studentTasks }) => (
+          {sortedGroups.map(({ student, tasks: studentTasks }) => (
             <div key={studentTasks[0].studentId} className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
               <SectionHeader title={`${student.lastName}, ${student.firstName} — Year ${student.year}`} />
               <div className="bg-white overflow-x-auto">
