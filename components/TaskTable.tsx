@@ -10,10 +10,11 @@ type Task = {
   status: string;
   date: string;
   notes: string;
+  updatedAt?: string;
   student?: { firstName: string; lastName: string };
 };
 
-export function TaskTable({ tasks, showStudent = false }: { tasks: Task[]; showStudent?: boolean }) {
+export function TaskTable({ tasks, showStudent = false, showUpdatedAt = false }: { tasks: Task[]; showStudent?: boolean; showUpdatedAt?: boolean }) {
   if (tasks.length === 0) {
     return <p className="text-sm text-gray-400 p-4">No tasks found.</p>;
   }
@@ -28,6 +29,7 @@ export function TaskTable({ tasks, showStudent = false }: { tasks: Task[]; showS
             <th className="px-4 py-3 text-left font-semibold text-gray-600">Category</th>
             <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
             <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
+            {showUpdatedAt && <th className="px-4 py-3 text-left font-semibold text-gray-600">Last Updated</th>}
             <th className="px-4 py-3 text-left font-semibold text-gray-600">Notes</th>
             <th className="px-4 py-3"></th>
           </tr>
@@ -44,6 +46,11 @@ export function TaskTable({ tasks, showStudent = false }: { tasks: Task[]; showS
               <td className="px-4 py-3 text-gray-600">{task.category}</td>
               <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
               <td className="px-4 py-3 text-gray-600">{task.date}</td>
+              {showUpdatedAt && (
+                <td className="px-4 py-3 text-gray-500 text-xs">
+                  {task.updatedAt ? new Date(task.updatedAt).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                </td>
+              )}
               <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{task.notes}</td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-1">

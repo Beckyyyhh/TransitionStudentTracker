@@ -12,6 +12,7 @@ type Task = {
   status: string;
   date: string;
   notes: string;
+  updatedAt?: string;
 };
 
 export function StudentProfileTabs({
@@ -55,7 +56,7 @@ export function StudentProfileTabs({
 
       {tab === "history" && (
         <div className="bg-white">
-          <TaskTable tasks={historyTasks} />
+          <TaskTable tasks={historyTasks} showUpdatedAt />
         </div>
       )}
 
