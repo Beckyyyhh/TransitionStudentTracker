@@ -12,30 +12,30 @@ export default async function HistoryPage({
 }) {
   const { studentId, status } = await searchParams;
 
-  const [students, tasks] = await Promise.all([
+  const [students, studentGroups] = await Promise.all([
     prisma.student.findMany({ orderBy: { lastName: "asc" } }),
-    prisma.task.findMany({
+    prisma.student.findMany({
       where: {
-        ...(studentId ? { studentId: parseInt(studentId) } : {}),
-        ...(status ? { status } : {}),
+        tasks: { some: {} },
+        ...(studentId ? { id: parseInt(studentId) } : {}),
       },
-      include: { student: true },
-      orderBy: { updatedAt: "desc" },
+      include: {
+        tasks: {
+          where: { ...(status ? { status } : {}) },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
     }),
   ]);
 
-  // Group by student, preserving updatedAt desc order within each group
-  const grouped = new Map<number, { student: { firstName: string; lastName: string; year: number }; tasks: typeof tasks; latestUpdatedAt: Date }>();
-  for (const task of tasks) {
-    if (!grouped.has(task.studentId)) {
-      grouped.set(task.studentId, { student: task.student, tasks: [], latestUpdatedAt: task.updatedAt });
-    }
-    grouped.get(task.studentId)!.tasks.push(task);
-  }
+  // Remove students whose tasks were all filtered out by the status filter
+  const filtered = studentGroups.filter((s) => s.tasks.length > 0);
 
-  // Sort student groups by most recently updated task
-  const sortedGroups = Array.from(grouped.values()).sort(
-    (a, b) => b.latestUpdatedAt.getTime() - a.latestUpdatedAt.getTime()
+  // Sort students by their most recently updated task
+  filtered.sort(
+    (a, b) =>
+      new Date(b.tasks[0].updatedAt).getTime() -
+      new Date(a.tasks[0].updatedAt).getTime()
   );
 
   return (
@@ -51,15 +51,15 @@ export default async function HistoryPage({
         </div>
       </div>
 
-      {grouped.size === 0 ? (
+      {filtered.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center text-gray-400" style={{ border: "1px solid #afa9ec" }}>
           No records found.
         </div>
       ) : (
         <div className="space-y-6">
-          {sortedGroups.map(({ student, tasks: studentTasks }) => (
-            <div key={studentTasks[0].studentId} className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
-              <SectionHeader title={`${student.lastName}, ${student.firstName} — Year ${student.year}`} />
+          {filtered.map((s) => (
+            <div key={s.id} className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
+              <SectionHeader title={`${s.lastName}, ${s.firstName} — Year ${s.year}`} />
               <div className="bg-white overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -72,7 +72,7 @@ export default async function HistoryPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {studentTasks.map((task) => (
+                    {s.tasks.map((task) => (
                       <tr key={task.id} className="border-b hover:bg-purple-50/30" style={{ borderColor: "#eeedfe" }}>
                         <td className="px-4 py-3 font-medium text-gray-800">{task.title}</td>
                         <td className="px-4 py-3 text-gray-600">{task.category}</td>
