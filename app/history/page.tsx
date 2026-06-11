@@ -58,8 +58,8 @@ export default async function HistoryPage({
               <tbody>
                 {tasks.map((task) => (
                   <tr key={task.id} className="border-b hover:bg-purple-50/30" style={{ borderColor: "#eeedfe" }}>
-                    <td className="px-4 py-3 font-semibold" style={{ color: "#3d2c8d" }}>
-                      <a href={`/students/${task.studentId}`} className="hover:underline">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <a href={`/students/${task.studentId}`} className="font-semibold hover:underline" style={{ color: "#3d2c8d" }}>
                         {task.student.lastName}, {task.student.firstName}
                       </a>
                       <span className="ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#534ab7" }}>
