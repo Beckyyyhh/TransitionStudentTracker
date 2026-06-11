@@ -71,7 +71,7 @@ export default async function HistoryPage({
                     <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
                     <td className="px-4 py-3 text-gray-600">{task.date}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {task.updatedAt.toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {task.updatedAt.toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Australia/Sydney" })}
                     </td>
                     <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{task.notes}</td>
                   </tr>
