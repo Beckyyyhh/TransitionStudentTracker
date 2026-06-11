@@ -16,6 +16,9 @@ export default async function StudentsPage() {
     year: s.year,
     referrer: s.referrer,
     taskCount: s.tasks.length,
+    completedCount: s.tasks.filter((t) => t.status === "COMPLETED").length,
+    inProgressCount: s.tasks.filter((t) => t.status === "IN_PROGRESS").length,
+    notStartedCount: s.tasks.filter((t) => t.status === "NOT_STARTED").length,
   }));
 
   return (

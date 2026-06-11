@@ -11,6 +11,9 @@ type Student = {
   year: number;
   referrer: string;
   taskCount: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
 };
 
 export function StudentsClientPage({ students }: { students: Student[] }) {

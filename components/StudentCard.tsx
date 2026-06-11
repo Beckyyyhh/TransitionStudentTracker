@@ -7,9 +7,12 @@ type Props = {
   year: number;
   referrer: string;
   taskCount: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
 };
 
-export function StudentCard({ id, firstName, lastName, year, referrer, taskCount }: Props) {
+export function StudentCard({ id, firstName, lastName, year, referrer, taskCount, completedCount, inProgressCount, notStartedCount }: Props) {
   return (
     <Link href={`/students/${id}`}>
       <div
@@ -28,10 +31,21 @@ export function StudentCard({ id, firstName, lastName, year, referrer, taskCount
           </span>
         </div>
         <p className="text-sm text-gray-500 mb-3">{referrer}</p>
-        <div className="flex items-center gap-1 text-sm" style={{ color: "#534ab7" }}>
-          <span className="font-semibold">{taskCount}</span>
-          <span>{taskCount === 1 ? "task" : "tasks"}</span>
-        </div>
+        {taskCount === 0 ? (
+          <p className="text-xs text-gray-400">No tasks</p>
+        ) : (
+          <div className="flex gap-2 flex-wrap">
+            {completedCount > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">{completedCount} completed</span>
+            )}
+            {inProgressCount > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{inProgressCount} in progress</span>
+            )}
+            {notStartedCount > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{notStartedCount} not started</span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );
