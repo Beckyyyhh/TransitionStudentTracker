@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
   const students = await prisma.student.findMany({
+    where: { weOnly: false },
     include: { tasks: true },
     orderBy: [{ year: "asc" }, { lastName: "asc" }],
   });

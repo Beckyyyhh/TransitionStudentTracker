@@ -33,6 +33,36 @@ export async function updateStudent(id: number, formData: FormData) {
   revalidatePath("/students");
 }
 
+export async function createWEStudent(formData: FormData) {
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+  const year = parseInt(formData.get("year") as string);
+  const referrer = (formData.get("referrer") as string) || "Self-referred";
+
+  const student = await prisma.student.create({
+    data: { firstName, lastName, year, referrer, weOnly: true },
+  });
+
+  // Create initial WE task
+  await prisma.task.create({
+    data: {
+      studentId: student.id,
+      title: (formData.get("title") as string) || "Work Experience",
+      category: "Work Experience",
+      status: "NOT_STARTED",
+      date: (formData.get("date") as string) || new Date().toISOString().split("T")[0],
+      weCompany: (formData.get("weCompany") as string) || "",
+      weContactPhone: (formData.get("weContactPhone") as string) || "",
+      weContactEmail: (formData.get("weContactEmail") as string) || "",
+      weStartDate: (formData.get("weStartDate") as string) || "",
+      weEndDate: (formData.get("weEndDate") as string) || "",
+    },
+  });
+
+  revalidatePath("/work-experience");
+  return student.id;
+}
+
 export async function toggleAtRisk(id: number, atRisk: boolean) {
   await prisma.student.update({ where: { id }, data: { atRisk } });
   revalidatePath(`/students/${id}`);
