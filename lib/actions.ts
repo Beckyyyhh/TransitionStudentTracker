@@ -107,10 +107,19 @@ export async function getWorkExperienceCompanies() {
   return Array.from(seen.values());
 }
 
-export async function updateWorkExperienceOrder(orderedIds: number[]) {
-  await Promise.all(
-    orderedIds.map((id, index) => prisma.task.update({ where: { id }, data: { weSortOrder: index } }))
-  );
+export async function updateWorkExperienceGroupOrder(orderedStudentIds: number[]) {
+  // Fetch all WE tasks ordered by updatedAt within each student
+  const tasks = await prisma.task.findMany({
+    where: { category: "Work Experience" },
+    select: { id: true, studentId: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  const updates: { id: number; order: number }[] = [];
+  for (let si = 0; si < orderedStudentIds.length; si++) {
+    const studentTasks = tasks.filter((t) => t.studentId === orderedStudentIds[si]);
+    studentTasks.forEach((t, ti) => updates.push({ id: t.id, order: si * 100 + ti }));
+  }
+  await Promise.all(updates.map((u) => prisma.task.update({ where: { id: u.id }, data: { weSortOrder: u.order } })));
   revalidatePath("/work-experience");
 }
 

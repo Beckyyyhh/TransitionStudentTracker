@@ -18,8 +18,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { StatusBadge } from "@/components/StatusBadge";
 import { WorkExperienceEditButton } from "@/components/WorkExperienceEditButton";
-import { updateWorkExperienceOrder, resetWorkExperienceOrder } from "@/lib/actions";
-import { GripVertical, RotateCcw } from "lucide-react";
+import { updateWorkExperienceGroupOrder, resetWorkExperienceOrder } from "@/lib/actions";
+import { GripVertical, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 
 const CHECKLIST = [
   { key: "weSPR", label: "SPR filled out" },
@@ -52,32 +52,14 @@ type Task = {
   student: { firstName: string; lastName: string; year: number };
 };
 
-function SortableRow({ task }: { task: Task }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+type Group = { studentId: number; student: Task["student"]; tasks: Task[] };
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
+function TaskCard({ task }: { task: Task }) {
   return (
-    <div ref={setNodeRef} style={style} className="p-5 border-b last:border-0" {...attributes}>
+    <div className="ml-8 mr-4 mb-3 rounded-lg border p-4" style={{ borderColor: "#eeedfe", backgroundColor: "#faf9ff" }}>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <button
-            {...listeners}
-            className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none"
-            title="Drag to reorder"
-          >
-            <GripVertical size={18} />
-          </button>
-          <a href={`/students/${task.studentId}`} className="font-extrabold text-base hover:underline" style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}>
-            {task.student.lastName}, {task.student.firstName}
-          </a>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: "#534ab7" }}>
-            Yr {task.student.year}
-          </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm text-gray-800">{task.title}</span>
           <StatusBadge status={task.status} />
         </div>
         <WorkExperienceEditButton task={task} />
@@ -126,24 +108,120 @@ function SortableRow({ task }: { task: Task }) {
   );
 }
 
+function SortableGroup({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: Group;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.studentId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const completedCount = group.tasks.filter((t) => t.status === "COMPLETED").length;
+
+  return (
+    <div ref={setNodeRef} style={{ ...style, borderColor: "#eeedfe" }} className="border-b last:border-0">
+      {/* Group header */}
+      <div
+        className="flex items-center gap-2 px-4 py-3 cursor-pointer hover:bg-purple-50/40 transition-colors"
+        onClick={onToggle}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none shrink-0"
+          title="Drag to reorder"
+        >
+          <GripVertical size={18} />
+        </button>
+
+        <span className="text-gray-400 shrink-0">
+          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </span>
+
+        <a
+          href={`/students/${group.studentId}`}
+          onClick={(e) => e.stopPropagation()}
+          className="font-extrabold text-base hover:underline shrink-0"
+          style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}
+        >
+          {group.student.lastName}, {group.student.firstName}
+        </a>
+
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white shrink-0" style={{ backgroundColor: "#534ab7" }}>
+          Yr {group.student.year}
+        </span>
+
+        <span className="text-xs text-gray-500 ml-1">
+          {group.tasks.length} placement{group.tasks.length !== 1 ? "s" : ""}
+          {completedCount > 0 && ` · ${completedCount} completed`}
+        </span>
+      </div>
+
+      {/* Expanded tasks */}
+      {expanded && (
+        <div className="pb-2">
+          {group.tasks.map((task) => (
+            <TaskCard key={task.id} task={task} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialTasks: Task[]; isCustomOrdered: boolean }) {
-  const [tasks, setTasks] = useState(initialTasks);
+  // Group by student, preserving server sort order
+  const buildGroups = (tasks: Task[]): Group[] => {
+    const map = new Map<number, Group>();
+    for (const task of tasks) {
+      if (!map.has(task.studentId)) {
+        map.set(task.studentId, { studentId: task.studentId, student: task.student, tasks: [] });
+      }
+      map.get(task.studentId)!.tasks.push(task);
+    }
+    return Array.from(map.values());
+  };
+
+  const [groups, setGroups] = useState(() => buildGroups(initialTasks));
+  const [expanded, setExpanded] = useState<Set<number>>(() => {
+    // Auto-expand students with only 1 placement
+    const initial = new Set<number>();
+    buildGroups(initialTasks).forEach((g) => { if (g.tasks.length === 1) initial.add(g.studentId); });
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [customOrdered, setCustomOrdered] = useState(isCustomOrdered);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  function toggleExpand(studentId: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(studentId) ? next.delete(studentId) : next.add(studentId);
+      return next;
+    });
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
-    const oldIndex = tasks.findIndex((t) => t.id === active.id);
-    const newIndex = tasks.findIndex((t) => t.id === over.id);
-    const reordered = arrayMove(tasks, oldIndex, newIndex);
-    setTasks(reordered);
+    const oldIndex = groups.findIndex((g) => g.studentId === active.id);
+    const newIndex = groups.findIndex((g) => g.studentId === over.id);
+    const reordered = arrayMove(groups, oldIndex, newIndex);
+    setGroups(reordered);
     setCustomOrdered(true);
     setSaving(true);
-    await updateWorkExperienceOrder(reordered.map((t) => t.id));
+    await updateWorkExperienceGroupOrder(reordered.map((g) => g.studentId));
     setSaving(false);
   }
 
@@ -161,25 +239,32 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialT
         <p className="text-xs text-gray-500">
           {customOrdered ? "Custom order — drag to rearrange" : "Sorted by most recently updated · drag to rearrange"}
         </p>
-        {customOrdered && (
-          <button
-            onClick={handleReset}
-            disabled={saving}
-            className="flex items-center gap-1 text-xs font-semibold disabled:opacity-50"
-            style={{ color: "#534ab7" }}
-          >
-            <RotateCcw size={12} />
-            Reset to default order
-          </button>
-        )}
-        {saving && <span className="text-xs text-gray-400">Saving…</span>}
+        <div className="flex items-center gap-3">
+          {saving && <span className="text-xs text-gray-400">Saving…</span>}
+          {customOrdered && (
+            <button
+              onClick={handleReset}
+              disabled={saving}
+              className="flex items-center gap-1 text-xs font-semibold disabled:opacity-50"
+              style={{ color: "#534ab7" }}
+            >
+              <RotateCcw size={12} />
+              Reset to default order
+            </button>
+          )}
+        </div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="bg-white divide-y" style={{ borderColor: "#eeedfe" }}>
-            {tasks.map((task) => (
-              <SortableRow key={task.id} task={task} />
+        <SortableContext items={groups.map((g) => g.studentId)} strategy={verticalListSortingStrategy}>
+          <div className="bg-white">
+            {groups.map((group) => (
+              <SortableGroup
+                key={group.studentId}
+                group={group}
+                expanded={expanded.has(group.studentId)}
+                onToggle={() => toggleExpand(group.studentId)}
+              />
             ))}
           </div>
         </SortableContext>
