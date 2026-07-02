@@ -14,6 +14,7 @@ model Student {
   year      Int
   referrer  String
   notes     String   @default("")
+  atRisk    Boolean  @default(false)
   createdAt DateTime @default(now())
   tasks     Task[]
 }

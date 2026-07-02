@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { StudentProfileTabs } from "@/components/StudentProfileTabs";
 import { DeleteStudentButton } from "@/components/DeleteStudentButton";
+import { AtRiskToggle } from "@/components/AtRiskToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +46,21 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               <div className="flex items-center gap-3 text-purple-200 text-sm flex-wrap">
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-white font-semibold">Year {student.year}</span>
                 <span>{student.referrer}</span>
+              {student.atRisk && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white">
+                  ⚠ At Risk
+                </span>
+              )}
               </div>
               {student.notes && (
                 <p className="mt-3 text-purple-100 text-sm max-w-xl">{student.notes}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
-              <DeleteStudentButton studentId={student.id} />
+              <div className="flex gap-2">
+                <AtRiskToggle studentId={student.id} atRisk={student.atRisk} />
+                <DeleteStudentButton studentId={student.id} />
+              </div>
             <div className="flex gap-4 text-center">
               <div>
                 <div className="text-3xl font-extrabold">{student.tasks.length}</div>

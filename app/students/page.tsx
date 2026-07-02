@@ -15,6 +15,7 @@ export default async function StudentsPage() {
     lastName: s.lastName,
     year: s.year,
     referrer: s.referrer,
+    atRisk: s.atRisk,
     taskCount: s.tasks.length,
     completedCount: s.tasks.filter((t) => t.status === "COMPLETED").length,
     inProgressCount: s.tasks.filter((t) => t.status === "IN_PROGRESS").length,

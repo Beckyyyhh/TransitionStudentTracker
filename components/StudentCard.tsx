@@ -6,13 +6,14 @@ type Props = {
   lastName: string;
   year: number;
   referrer: string;
+  atRisk: boolean;
   taskCount: number;
   completedCount: number;
   inProgressCount: number;
   notStartedCount: number;
 };
 
-export function StudentCard({ id, firstName, lastName, year, referrer, taskCount, completedCount, inProgressCount, notStartedCount }: Props) {
+export function StudentCard({ id, firstName, lastName, year, referrer, atRisk, taskCount, completedCount, inProgressCount, notStartedCount }: Props) {
   return (
     <Link href={`/students/${id}`}>
       <div
@@ -23,12 +24,14 @@ export function StudentCard({ id, firstName, lastName, year, referrer, taskCount
           <h3 className="font-extrabold text-lg" style={{ color: "#26215c", fontFamily: "Nunito, sans-serif" }}>
             {firstName} {lastName}
           </h3>
-          <span
-            className="text-xs font-bold px-2 py-1 rounded-full text-white ml-2 shrink-0"
-            style={{ backgroundColor: "#3d2c8d" }}
-          >
-            Yr {year}
-          </span>
+          <div className="flex gap-1 ml-2 shrink-0">
+            {atRisk && (
+              <span className="text-xs font-bold px-2 py-1 rounded-full text-white bg-red-600">⚠ At Risk</span>
+            )}
+            <span className="text-xs font-bold px-2 py-1 rounded-full text-white" style={{ backgroundColor: "#3d2c8d" }}>
+              Yr {year}
+            </span>
+          </div>
         </div>
         <p className="text-sm text-gray-500 mb-3">{referrer}</p>
         {taskCount === 0 ? (

@@ -10,6 +10,7 @@ type Student = {
   lastName: string;
   year: number;
   referrer: string;
+  atRisk: boolean;
   taskCount: number;
   completedCount: number;
   inProgressCount: number;
@@ -19,6 +20,7 @@ type Student = {
 export function StudentsClientPage({ students }: { students: Student[] }) {
   const [q, setQ] = useState("");
   const [year, setYear] = useState<number | null>(null);
+  const [atRiskOnly, setAtRiskOnly] = useState(false);
 
   const filtered = students.filter((s) => {
     const matchesYear = year === null || s.year === year;
@@ -26,10 +28,11 @@ export function StudentsClientPage({ students }: { students: Student[] }) {
       q === "" ||
       `${s.firstName} ${s.lastName}`.toLowerCase().includes(q.toLowerCase()) ||
       s.referrer.toLowerCase().includes(q.toLowerCase());
-    return matchesYear && matchesQ;
+    const matchesRisk = !atRiskOnly || s.atRisk;
+    return matchesYear && matchesQ && matchesRisk;
   });
 
-  const grouped = year === null && q === ""
+  const grouped = year === null && q === "" && !atRiskOnly
     ? filtered.reduce<Record<number, Student[]>>((acc, s) => {
         (acc[s.year] ??= []).push(s);
         return acc;
@@ -61,6 +64,15 @@ export function StudentsClientPage({ students }: { students: Student[] }) {
               style={{ borderColor: "#afa9ec" }}
             />
             <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setAtRiskOnly(!atRiskOnly)}
+                className="px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors"
+                style={atRiskOnly
+                  ? { backgroundColor: "#dc2626", borderColor: "#dc2626", color: "white" }
+                  : { borderColor: "#afa9ec", backgroundColor: "white", color: "#6b7280" }}
+              >
+                ⚠ At Risk
+              </button>
               <button
                 onClick={() => setYear(null)}
                 className="px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors"

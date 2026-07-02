@@ -33,6 +33,12 @@ export async function updateStudent(id: number, formData: FormData) {
   revalidatePath("/students");
 }
 
+export async function toggleAtRisk(id: number, atRisk: boolean) {
+  await prisma.student.update({ where: { id }, data: { atRisk } });
+  revalidatePath(`/students/${id}`);
+  revalidatePath("/students");
+}
+
 export async function deleteStudent(id: number) {
   await prisma.student.delete({ where: { id } });
   revalidatePath("/students");
