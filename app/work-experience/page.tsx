@@ -25,6 +25,7 @@ export default async function WorkExperiencePage() {
     notes: t.notes,
     category: t.category,
     weCompany: t.weCompany,
+    weContactName: t.weContactName,
     weContactPhone: t.weContactPhone,
     weContactEmail: t.weContactEmail,
     weStartDate: t.weStartDate,

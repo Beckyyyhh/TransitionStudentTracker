@@ -15,6 +15,7 @@ type Task = {
   date: string;
   notes: string;
   weCompany?: string;
+  weContactName?: string;
   weContactPhone?: string;
   weContactEmail?: string;
   weStartDate?: string;
@@ -44,7 +45,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
   const [notes, setNotes] = useState<TaskNote[]>([]);
   const [newNote, setNewNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ weCompany: string; weContactPhone: string; weContactEmail: string }[]>([]);
+  const [companies, setCompanies] = useState<{ weCompany: string; weContactName: string; weContactPhone: string; weContactEmail: string }[]>([]);
 
   const [form, setForm] = useState({
     title: task.title,
@@ -52,6 +53,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
     status: task.status,
     date: task.date,
     weCompany: task.weCompany ?? "",
+    weContactName: task.weContactName ?? "",
     weContactPhone: task.weContactPhone ?? "",
     weContactEmail: task.weContactEmail ?? "",
     weStartDate: task.weStartDate ?? "",
@@ -76,7 +78,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
   function applyCompanyTemplate(name: string) {
     const match = companies.find((c) => c.weCompany === name);
     if (match) {
-      setForm((f) => ({ ...f, weCompany: match.weCompany, weContactPhone: match.weContactPhone, weContactEmail: match.weContactEmail }));
+      setForm((f) => ({ ...f, weCompany: match.weCompany, weContactName: match.weContactName, weContactPhone: match.weContactPhone, weContactEmail: match.weContactEmail }));
     }
   }
 
@@ -183,6 +185,10 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
                   <datalist id="we-companies">
                     {companies.map((c) => <option key={c.weCompany} value={c.weCompany} />)}
                   </datalist>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Name</label>
+                  <input value={form.weContactName} onChange={(e) => setForm({ ...form, weContactName: e.target.value })} className={inputClass} style={borderStyle} placeholder="e.g. Jane Smith" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

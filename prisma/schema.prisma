@@ -36,6 +36,7 @@ model Task {
 
   // Work Experience extra fields
   weCompany            String  @default("")
+  weContactName        String  @default("")
   weContactPhone       String  @default("")
   weContactEmail       String  @default("")
   weStartDate          String  @default("")

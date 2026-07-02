@@ -11,6 +11,7 @@ type Task = {
   date: string;
   notes: string;
   weCompany: string;
+  weContactName: string;
   weContactPhone: string;
   weContactEmail: string;
   weStartDate: string;

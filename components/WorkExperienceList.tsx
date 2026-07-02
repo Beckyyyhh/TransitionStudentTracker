@@ -39,6 +39,7 @@ type Task = {
   notes: string;
   category: string;
   weCompany: string;
+  weContactName: string;
   weContactPhone: string;
   weContactEmail: string;
   weStartDate: string;
@@ -80,6 +81,7 @@ function TaskCard({ task }: { task: Task }) {
         </div>
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Contact</p>
+          {task.weContactName && <p className="text-sm font-medium text-gray-800">{task.weContactName}</p>}
           <p className="text-sm text-gray-800">{task.weContactPhone || "—"}</p>
           <p className="text-sm text-gray-800">{task.weContactEmail || ""}</p>
         </div>

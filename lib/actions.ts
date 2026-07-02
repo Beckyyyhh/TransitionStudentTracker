@@ -102,6 +102,7 @@ export async function updateTask(
     date?: string;
     notes?: string;
     weCompany?: string;
+    weContactName?: string;
     weContactPhone?: string;
     weContactEmail?: string;
     weStartDate?: string;
@@ -124,14 +125,14 @@ export async function updateTask(
 export async function getWorkExperienceCompanies() {
   const tasks = await prisma.task.findMany({
     where: { category: "Work Experience", NOT: { weCompany: "" } },
-    select: { weCompany: true, weContactPhone: true, weContactEmail: true },
+    select: { weCompany: true, weContactName: true, weContactPhone: true, weContactEmail: true },
     orderBy: { updatedAt: "desc" },
   });
   // Deduplicate by company name, keeping most recent contact info
-  const seen = new Map<string, { weCompany: string; weContactPhone: string; weContactEmail: string }>();
+  const seen = new Map<string, { weCompany: string; weContactName: string; weContactPhone: string; weContactEmail: string }>();
   for (const t of tasks) {
     if (t.weCompany && !seen.has(t.weCompany)) {
-      seen.set(t.weCompany, { weCompany: t.weCompany, weContactPhone: t.weContactPhone, weContactEmail: t.weContactEmail });
+      seen.set(t.weCompany, { weCompany: t.weCompany, weContactName: t.weContactName, weContactPhone: t.weContactPhone, weContactEmail: t.weContactEmail });
     }
   }
   return Array.from(seen.values());
