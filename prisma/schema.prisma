@@ -29,4 +29,17 @@ model Task {
   notes     String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Work Experience extra fields
+  weCompany            String  @default("")
+  weContactPhone       String  @default("")
+  weContactEmail       String  @default("")
+  weStartDate          String  @default("")
+  weEndDate            String  @default("")
+  weSPR                Boolean @default(false)
+  weMyWorkExperience   Boolean @default(false)
+  weMedicalDocs        Boolean @default(false)
+  weWorkplaceVisited   Boolean @default(false)
+  weSafetyGuideParent  Boolean @default(false)
+  weSafetyGuideEmployer Boolean @default(false)
 }

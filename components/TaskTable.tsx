@@ -12,6 +12,17 @@ type Task = {
   notes: string;
   updatedAt?: string | Date;
   student?: { firstName: string; lastName: string };
+  weCompany?: string;
+  weContactPhone?: string;
+  weContactEmail?: string;
+  weStartDate?: string;
+  weEndDate?: string;
+  weSPR?: boolean;
+  weMyWorkExperience?: boolean;
+  weMedicalDocs?: boolean;
+  weWorkplaceVisited?: boolean;
+  weSafetyGuideParent?: boolean;
+  weSafetyGuideEmployer?: boolean;
 };
 
 export function TaskTable({ tasks, showStudent = false, showUpdatedAt = false }: { tasks: Task[]; showStudent?: boolean; showUpdatedAt?: boolean }) {

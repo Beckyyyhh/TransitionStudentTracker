@@ -65,6 +65,17 @@ export async function updateTask(
     status?: string;
     date?: string;
     notes?: string;
+    weCompany?: string;
+    weContactPhone?: string;
+    weContactEmail?: string;
+    weStartDate?: string;
+    weEndDate?: string;
+    weSPR?: boolean;
+    weMyWorkExperience?: boolean;
+    weMedicalDocs?: boolean;
+    weWorkplaceVisited?: boolean;
+    weSafetyGuideParent?: boolean;
+    weSafetyGuideEmployer?: boolean;
   }
 ) {
   const task = await prisma.task.update({ where: { id }, data });

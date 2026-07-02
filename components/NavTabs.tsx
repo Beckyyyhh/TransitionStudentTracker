@@ -7,6 +7,7 @@ import { LogOut } from "lucide-react";
 const tabs = [
   { href: "/students", label: "Students" },
   { href: "/tasks", label: "Tasks" },
+  { href: "/work-experience", label: "Work Experience" },
   { href: "/history", label: "History" },
   { href: "/dashboard", label: "Dashboard" },
 ];
