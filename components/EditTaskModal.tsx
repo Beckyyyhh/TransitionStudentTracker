@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { updateTask, addTaskNote, getTaskNotes } from "@/lib/actions";
+import { updateTask, addTaskNote, getTaskNotes, getWorkExperienceCompanies } from "@/lib/actions";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { X, Send } from "lucide-react";
@@ -44,6 +44,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
   const [notes, setNotes] = useState<TaskNote[]>([]);
   const [newNote, setNewNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
+  const [companies, setCompanies] = useState<{ weCompany: string; weContactPhone: string; weContactEmail: string }[]>([]);
 
   const [form, setForm] = useState({
     title: task.title,
@@ -68,8 +69,16 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
   useEffect(() => {
     if (open) {
       getTaskNotes(task.id).then((fetched) => setNotes(fetched));
+      getWorkExperienceCompanies().then(setCompanies);
     }
   }, [open, task.id]);
+
+  function applyCompanyTemplate(name: string) {
+    const match = companies.find((c) => c.weCompany === name);
+    if (match) {
+      setForm((f) => ({ ...f, weCompany: match.weCompany, weContactPhone: match.weContactPhone, weContactEmail: match.weContactEmail }));
+    }
+  }
 
   async function handleSave() {
     setLoading(true);
@@ -157,7 +166,23 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
                 <p className="text-sm font-extrabold" style={{ color: "#3d2c8d", fontFamily: "var(--font-nunito), sans-serif" }}>Work Experience Details</p>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Company Name / Type of Work</label>
-                  <input value={form.weCompany} onChange={(e) => setForm({ ...form, weCompany: e.target.value })} className={inputClass} style={borderStyle} placeholder="e.g. Smith & Co — Accounting" />
+                  {companies.length > 0 && (
+                    <select
+                      className="w-full border rounded-md px-3 py-2 text-sm mb-1.5 text-gray-600"
+                      style={borderStyle}
+                      value=""
+                      onChange={(e) => applyCompanyTemplate(e.target.value)}
+                    >
+                      <option value="">— Pre-fill from previous company —</option>
+                      {companies.map((c) => (
+                        <option key={c.weCompany} value={c.weCompany}>{c.weCompany}</option>
+                      ))}
+                    </select>
+                  )}
+                  <input value={form.weCompany} onChange={(e) => setForm({ ...form, weCompany: e.target.value })} className={inputClass} style={borderStyle} placeholder="e.g. Smith & Co — Accounting" list="we-companies" />
+                  <datalist id="we-companies">
+                    {companies.map((c) => <option key={c.weCompany} value={c.weCompany} />)}
+                  </datalist>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

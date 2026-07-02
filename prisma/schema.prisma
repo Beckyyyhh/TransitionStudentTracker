@@ -44,6 +44,7 @@ model Task {
   weWorkplaceVisited   Boolean @default(false)
   weSafetyGuideParent  Boolean @default(false)
   weSafetyGuideEmployer Boolean @default(false)
+  weSortOrder           Int?
 }
 
 model TaskNote {

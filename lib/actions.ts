@@ -85,6 +85,37 @@ export async function updateTask(
   revalidatePath("/dashboard");
 }
 
+export async function getWorkExperienceCompanies() {
+  const tasks = await prisma.task.findMany({
+    where: { category: "Work Experience", NOT: { weCompany: "" } },
+    select: { weCompany: true, weContactPhone: true, weContactEmail: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  // Deduplicate by company name, keeping most recent contact info
+  const seen = new Map<string, { weCompany: string; weContactPhone: string; weContactEmail: string }>();
+  for (const t of tasks) {
+    if (t.weCompany && !seen.has(t.weCompany)) {
+      seen.set(t.weCompany, { weCompany: t.weCompany, weContactPhone: t.weContactPhone, weContactEmail: t.weContactEmail });
+    }
+  }
+  return Array.from(seen.values());
+}
+
+export async function updateWorkExperienceOrder(orderedIds: number[]) {
+  await Promise.all(
+    orderedIds.map((id, index) => prisma.task.update({ where: { id }, data: { weSortOrder: index } }))
+  );
+  revalidatePath("/work-experience");
+}
+
+export async function resetWorkExperienceOrder() {
+  await prisma.task.updateMany({
+    where: { category: "Work Experience" },
+    data: { weSortOrder: null },
+  });
+  revalidatePath("/work-experience");
+}
+
 export async function addTaskNote(taskId: number, content: string) {
   await prisma.taskNote.create({ data: { taskId, content } });
   const task = await prisma.task.findUnique({ where: { id: taskId } });
