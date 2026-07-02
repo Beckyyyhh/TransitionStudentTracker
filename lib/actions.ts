@@ -85,6 +85,23 @@ export async function updateTask(
   revalidatePath("/dashboard");
 }
 
+export async function addTaskNote(taskId: number, content: string) {
+  await prisma.taskNote.create({ data: { taskId, content } });
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (task) {
+    revalidatePath(`/students/${task.studentId}`);
+    revalidatePath("/tasks");
+    revalidatePath("/history");
+  }
+}
+
+export async function getTaskNotes(taskId: number) {
+  return prisma.taskNote.findMany({
+    where: { taskId },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export async function deleteTask(id: number) {
   const task = await prisma.task.findUnique({ where: { id } });
   if (!task) return;

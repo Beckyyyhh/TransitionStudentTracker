@@ -30,6 +30,8 @@ model Task {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  taskNotes TaskNote[]
+
   // Work Experience extra fields
   weCompany            String  @default("")
   weContactPhone       String  @default("")
@@ -42,4 +44,12 @@ model Task {
   weWorkplaceVisited   Boolean @default(false)
   weSafetyGuideParent  Boolean @default(false)
   weSafetyGuideEmployer Boolean @default(false)
+}
+
+model TaskNote {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
 }
