@@ -49,13 +49,22 @@ export default async function WorkExperiencePage() {
         <h1 className="text-2xl font-extrabold" style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}>
           Work Experience
         </h1>
-        <a
-          href="/work-experience/new"
-          className="px-4 py-2 text-sm font-bold text-white rounded-md"
-          style={{ backgroundColor: "#3d2c8d" }}
-        >
-          + Add WE Student
-        </a>
+        <div className="flex gap-2">
+          <a
+            href="/work-experience/employers"
+            className="px-4 py-2 text-sm font-semibold border rounded-md"
+            style={{ color: "#534ab7", borderColor: "#afa9ec" }}
+          >
+            Employer Bank
+          </a>
+          <a
+            href="/work-experience/new"
+            className="px-4 py-2 text-sm font-bold text-white rounded-md"
+            style={{ backgroundColor: "#3d2c8d" }}
+          >
+            + Add WE Student
+          </a>
+        </div>
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>

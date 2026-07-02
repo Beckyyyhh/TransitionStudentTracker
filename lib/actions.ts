@@ -52,6 +52,7 @@ export async function createWEStudent(formData: FormData) {
       status: "NOT_STARTED",
       date: (formData.get("date") as string) || new Date().toISOString().split("T")[0],
       weCompany: (formData.get("weCompany") as string) || "",
+      weContactName: (formData.get("weContactName") as string) || "",
       weContactPhone: (formData.get("weContactPhone") as string) || "",
       weContactEmail: (formData.get("weContactEmail") as string) || "",
       weStartDate: (formData.get("weStartDate") as string) || "",
@@ -123,19 +124,32 @@ export async function updateTask(
 }
 
 export async function getWorkExperienceCompanies() {
-  const tasks = await prisma.task.findMany({
-    where: { category: "Work Experience", NOT: { weCompany: "" } },
-    select: { weCompany: true, weContactName: true, weContactPhone: true, weContactEmail: true },
-    orderBy: { updatedAt: "desc" },
-  });
-  // Deduplicate by company name, keeping most recent contact info
-  const seen = new Map<string, { weCompany: string; weContactName: string; weContactPhone: string; weContactEmail: string }>();
-  for (const t of tasks) {
-    if (t.weCompany && !seen.has(t.weCompany)) {
-      seen.set(t.weCompany, { weCompany: t.weCompany, weContactName: t.weContactName, weContactPhone: t.weContactPhone, weContactEmail: t.weContactEmail });
-    }
-  }
-  return Array.from(seen.values());
+  const employers = await prisma.wEEmployer.findMany({ orderBy: { company: "asc" } });
+  return employers.map((e) => ({
+    weCompany: e.company,
+    weContactName: e.contactName,
+    weContactPhone: e.contactPhone,
+    weContactEmail: e.contactEmail,
+  }));
+}
+
+export async function getEmployers() {
+  return prisma.wEEmployer.findMany({ orderBy: { company: "asc" } });
+}
+
+export async function createEmployer(data: { company: string; contactName: string; contactPhone: string; contactEmail: string }) {
+  await prisma.wEEmployer.create({ data });
+  revalidatePath("/work-experience/employers");
+}
+
+export async function updateEmployer(id: number, data: { company: string; contactName: string; contactPhone: string; contactEmail: string }) {
+  await prisma.wEEmployer.update({ where: { id }, data });
+  revalidatePath("/work-experience/employers");
+}
+
+export async function deleteEmployer(id: number) {
+  await prisma.wEEmployer.delete({ where: { id } });
+  revalidatePath("/work-experience/employers");
 }
 
 export async function updateWorkExperienceGroupOrder(orderedStudentIds: number[]) {
