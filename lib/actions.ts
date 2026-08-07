@@ -33,6 +33,35 @@ export async function updateStudent(id: number, formData: FormData) {
   revalidatePath("/students");
 }
 
+export async function createWETaskForExistingStudent(studentId: number, data: {
+  title: string;
+  date: string;
+  weCompany: string;
+  weContactName: string;
+  weContactPhone: string;
+  weContactEmail: string;
+  weStartDate: string;
+  weEndDate: string;
+}) {
+  await prisma.task.create({
+    data: {
+      studentId,
+      title: data.title || "Work Experience",
+      category: "Work Experience",
+      status: "NOT_STARTED",
+      date: data.date || new Date().toISOString().split("T")[0],
+      weCompany: data.weCompany || "",
+      weContactName: data.weContactName || "",
+      weContactPhone: data.weContactPhone || "",
+      weContactEmail: data.weContactEmail || "",
+      weStartDate: data.weStartDate || "",
+      weEndDate: data.weEndDate || "",
+    },
+  });
+  revalidatePath("/work-experience");
+  revalidatePath(`/students/${studentId}`);
+}
+
 export async function createWEStudent(formData: FormData) {
   const firstName = formData.get("firstName") as string;
   const lastName = formData.get("lastName") as string;
