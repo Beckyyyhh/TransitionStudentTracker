@@ -193,7 +193,10 @@ export async function updateWorkExperienceGroupOrder(orderedStudentIds: number[]
     const studentTasks = tasks.filter((t) => t.studentId === orderedStudentIds[si]);
     studentTasks.forEach((t, ti) => updates.push({ id: t.id, order: si * 100 + ti }));
   }
-  await Promise.all(updates.map((u) => prisma.task.update({ where: { id: u.id }, data: { weSortOrder: u.order } })));
+  // Use raw SQL so updatedAt is not bumped (reordering shouldn't appear in History)
+  await Promise.all(
+    updates.map((u) => prisma.$executeRaw`UPDATE "Task" SET "weSortOrder" = ${u.order} WHERE id = ${u.id}`)
+  );
   revalidatePath("/work-experience");
 }
 
