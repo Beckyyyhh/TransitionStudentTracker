@@ -55,7 +55,7 @@ type Task = {
 
 type Group = { studentId: number; student: Task["student"]; tasks: Task[] };
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, onTaskSaved }: { task: Task; onTaskSaved: (updated: Partial<Task>) => void }) {
   return (
     <div className="ml-8 mr-4 mb-3 rounded-lg border p-4" style={{ borderColor: "#eeedfe", backgroundColor: "#faf9ff" }}>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -63,7 +63,7 @@ function TaskCard({ task }: { task: Task }) {
           <span className="font-semibold text-sm text-gray-800">{task.title}</span>
           <StatusBadge status={task.status} />
         </div>
-        <WorkExperienceEditButton task={task} />
+        <WorkExperienceEditButton task={task} onSaved={onTaskSaved} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
@@ -114,10 +114,12 @@ function SortableGroup({
   group,
   expanded,
   onToggle,
+  onTaskSaved,
 }: {
   group: Group;
   expanded: boolean;
   onToggle: () => void;
+  onTaskSaved: (taskId: number, updated: Partial<Task>) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.studentId });
 
@@ -173,7 +175,7 @@ function SortableGroup({
       {expanded && (
         <div className="pb-2">
           {group.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onTaskSaved={(updated) => onTaskSaved(task.id, updated)} />
           ))}
         </div>
       )}
@@ -222,6 +224,15 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialT
     setSaving(false);
   }
 
+  function handleTaskSaved(taskId: number, updated: Partial<Task>) {
+    setGroups((prev) =>
+      prev.map((g) => ({
+        ...g,
+        tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, ...updated } : t)),
+      }))
+    );
+  }
+
   async function handleReset() {
     setSaving(true);
     await resetWorkExperienceOrder();
@@ -261,6 +272,7 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialT
                 group={group}
                 expanded={expanded.has(group.studentId)}
                 onToggle={() => toggleExpand(group.studentId)}
+                onTaskSaved={handleTaskSaved}
               />
             ))}
           </div>

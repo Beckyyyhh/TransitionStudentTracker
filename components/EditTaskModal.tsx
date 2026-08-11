@@ -40,7 +40,15 @@ const WE_CHECKLIST = [
   { key: "weSafetyGuideEmployer", label: "Provided Workplace Safety Guide — Employer" },
 ] as const;
 
-export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.ReactNode }) {
+type FormState = {
+  title: string; category: string; status: string; date: string;
+  weCompany: string; weContactName: string; weContactPhone: string; weContactEmail: string;
+  weStartDate: string; weEndDate: string;
+  weSPR: boolean; weMyWorkExperience: boolean; weMedicalDocs: boolean;
+  weWorkplaceVisited: boolean; weSafetyGuideParent: boolean; weSafetyGuideEmployer: boolean;
+};
+
+export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger: React.ReactNode; onSaved?: (updated: FormState) => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,6 +98,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
       await updateTask(task.id, form);
       toast.success("Task updated");
       setOpen(false);
+      onSaved?.(form);
       router.refresh();
     } catch {
       toast.error("Failed to update task");
