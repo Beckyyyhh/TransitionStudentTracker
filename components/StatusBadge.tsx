@@ -12,6 +12,10 @@ export function StatusBadge({ status }: { status: string }) {
       label: "Completed",
       className: "bg-green-50 text-green-700 border border-green-300",
     },
+    CANCELLED: {
+      label: "Cancelled / Postponed",
+      className: "bg-red-50 text-red-600 border border-red-300",
+    },
   };
   const { label, className } = map[status] ?? map.NOT_STARTED;
   return (

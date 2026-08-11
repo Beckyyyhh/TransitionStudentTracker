@@ -195,12 +195,7 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialT
   };
 
   const [groups, setGroups] = useState(() => buildGroups(initialTasks));
-  const [expanded, setExpanded] = useState<Set<number>>(() => {
-    // Auto-expand students with only 1 placement
-    const initial = new Set<number>();
-    buildGroups(initialTasks).forEach((g) => { if (g.tasks.length === 1) initial.add(g.studentId); });
-    return initial;
-  });
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [customOrdered, setCustomOrdered] = useState(isCustomOrdered);
 

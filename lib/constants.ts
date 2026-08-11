@@ -28,6 +28,7 @@ export const TASK_STATUSES = [
   { value: "NOT_STARTED", label: "Not Started" },
   { value: "IN_PROGRESS", label: "In Progress" },
   { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled / Postponed" },
 ] as const;
 
 export const YEAR_GROUPS = [9, 10, 11, 12] as const;
