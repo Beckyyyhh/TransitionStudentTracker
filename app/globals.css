@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Button press feedback */
+button:not(:disabled):active,
+a[role="button"]:not(:disabled):active {
+  transform: scale(0.96);
+  opacity: 0.85;
+  transition: transform 0.08s ease, opacity 0.08s ease;
+}
+
 :root {
   --background: #f9f9fd;
   --foreground: #1a1a2e;

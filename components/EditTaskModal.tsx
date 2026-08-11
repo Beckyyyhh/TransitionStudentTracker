@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { updateTask, addTaskNote, getTaskNotes, getWorkExperienceCompanies } from "@/lib/actions";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
@@ -40,6 +41,7 @@ const WE_CHECKLIST = [
 ] as const;
 
 export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.ReactNode }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState<TaskNote[]>([]);
@@ -88,6 +90,7 @@ export function EditTaskModal({ task, trigger }: { task: Task; trigger: React.Re
       await updateTask(task.id, form);
       toast.success("Task updated");
       setOpen(false);
+      router.refresh();
     } catch {
       toast.error("Failed to update task");
     } finally {
