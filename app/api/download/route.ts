@@ -1,4 +1,3 @@
-import { download } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
@@ -9,10 +8,13 @@ export async function GET(req: NextRequest) {
   const attachment = await prisma.taskAttachment.findUnique({ where: { id: parseInt(id) } });
   if (!attachment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { url, stream } = await download(attachment.url, process.env.BLOB_READ_WRITE_TOKEN!);
-  void url;
+  const res = await fetch(attachment.url, {
+    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
+  });
 
-  return new NextResponse(stream, {
+  if (!res.ok) return NextResponse.json({ error: "Failed to fetch file" }, { status: 502 });
+
+  return new NextResponse(res.body, {
     headers: {
       "Content-Type": attachment.mimeType,
       "Content-Disposition": `inline; filename="${attachment.name}"`,
