@@ -4,8 +4,8 @@ import { useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import { EditTaskModal } from "./EditTaskModal";
 import { DeleteTaskButton } from "./DeleteTaskButton";
-import { getTaskNotes } from "@/lib/actions";
-import { Pencil, ChevronDown, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, MessageSquare } from "lucide-react";
+import { getTaskNotes, getTaskAttachments } from "@/lib/actions";
+import { Pencil, ChevronDown, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, MessageSquare, Paperclip, FileText } from "lucide-react";
 
 type Task = {
   id: number;
@@ -15,6 +15,7 @@ type Task = {
   date: string;
   notes: string;
   updatedAt?: string | Date;
+  attachmentCount?: number;
   student?: { firstName: string; lastName: string };
   weCompany?: string;
   weContactPhone?: string;
@@ -110,6 +111,43 @@ function ExpandedNotes({ taskId, originalNote }: { taskId: number; originalNote:
   );
 }
 
+function ExpandedAttachments({ taskId }: { taskId: number }) {
+  const [attachments, setAttachments] = useState<{ id: number; name: string; size: number; mimeType: string }[] | null>(null);
+
+  if (attachments === null) {
+    getTaskAttachments(taskId).then((fetched) => setAttachments(fetched));
+  }
+
+  if (attachments === null) return <p className="text-xs text-gray-400 italic">Loading…</p>;
+
+  if (attachments.length === 0) return <p className="text-xs text-gray-400 italic">No attachments.</p>;
+
+  function fmt(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {attachments.map((a) => (
+        <a
+          key={a.id}
+          href={`/api/download?id=${a.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm hover:bg-purple-50 transition-colors"
+          style={{ borderColor: "#eeedfe", color: "#534ab7" }}
+        >
+          <FileText size={13} />
+          <span className="font-medium truncate max-w-[180px]">{a.name}</span>
+          <span className="text-xs text-gray-400 shrink-0">{fmt(a.size)}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function TaskRow({
   task,
   showStudent,
@@ -122,6 +160,7 @@ function TaskRow({
   colCount: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const hasAttachments = (task.attachmentCount ?? 0) > 0;
 
   return (
     <>
@@ -154,12 +193,22 @@ function TaskRow({
           </td>
         )}
         <td className="px-4 py-3 text-gray-400">
-          {task.notes && (
-            <MessageSquare size={14} className="inline-block opacity-60" />
-          )}
+          <div className="flex items-center gap-2">
+            {task.notes && <MessageSquare size={14} className="opacity-60" />}
+          </div>
         </td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1">
+            {hasAttachments && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="p-1 rounded transition-colors hover:bg-purple-100"
+                style={{ color: "#534ab7" }}
+                title={`${task.attachmentCount} attachment${task.attachmentCount !== 1 ? "s" : ""}`}
+              >
+                <Paperclip size={15} />
+              </button>
+            )}
             <EditTaskModal
               task={task}
               trigger={
@@ -176,7 +225,17 @@ function TaskRow({
       {expanded && (
         <tr style={{ backgroundColor: "#faf9ff" }}>
           <td colSpan={colCount} className="px-6 py-3 border-b" style={{ borderColor: "#eeedfe" }}>
-            <ExpandedNotes key={task.id} taskId={task.id} originalNote={task.notes} />
+            <div className="space-y-3">
+              <ExpandedNotes key={task.id} taskId={task.id} originalNote={task.notes} />
+              {hasAttachments && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+                    <Paperclip size={11} /> Attachments
+                  </p>
+                  <ExpandedAttachments taskId={task.id} />
+                </div>
+              )}
+            </div>
           </td>
         </tr>
       )}

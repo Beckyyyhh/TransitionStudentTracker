@@ -19,7 +19,7 @@ export default async function TasksPage({
         ...(status ? { status } : {}),
         ...(category ? { category } : {}),
       },
-      include: { student: true },
+      include: { student: true, _count: { select: { taskAttachments: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.student.findMany({ orderBy: { lastName: "asc" } }),
@@ -55,7 +55,7 @@ export default async function TasksPage({
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
         <SectionHeader title={`Tasks — ${tasks.length} record${tasks.length !== 1 ? "s" : ""}`} />
         <div className="bg-white">
-          <TaskTable tasks={tasks} showStudent />
+          <TaskTable tasks={tasks.map((t) => ({ ...t, attachmentCount: t._count.taskAttachments }))} showStudent />
         </div>
       </div>
     </div>

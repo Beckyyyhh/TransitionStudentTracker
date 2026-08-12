@@ -13,6 +13,7 @@ type Task = {
   date: string;
   notes: string;
   updatedAt?: string;
+  attachmentCount?: number;
 };
 
 export function StudentProfileTabs({

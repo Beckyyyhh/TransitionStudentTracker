@@ -11,7 +11,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const id = parseInt(idStr);
   const student = await prisma.student.findUnique({
     where: { id },
-    include: { tasks: { orderBy: { updatedAt: "desc" } } },
+    include: {
+      tasks: {
+        orderBy: { updatedAt: "desc" },
+        include: { _count: { select: { taskAttachments: true } } },
+      },
+    },
   });
 
   if (!student) notFound();
@@ -24,6 +29,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     date: t.date,
     notes: t.notes,
     updatedAt: t.updatedAt.toISOString(),
+    attachmentCount: t._count.taskAttachments,
   });
 
   const activeTasks = student.tasks.filter((t) => t.status !== "COMPLETED").map(serializeTask);
