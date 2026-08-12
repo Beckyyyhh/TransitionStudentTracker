@@ -225,6 +225,22 @@ export async function getTaskNotes(taskId: number) {
   });
 }
 
+export async function getTaskAttachments(taskId: number) {
+  return prisma.taskAttachment.findMany({
+    where: { taskId },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function deleteTaskAttachment(id: number) {
+  const attachment = await prisma.taskAttachment.findUnique({ where: { id } });
+  if (!attachment) return;
+  // Delete from Vercel Blob
+  const { del } = await import("@vercel/blob");
+  await del(attachment.url);
+  await prisma.taskAttachment.delete({ where: { id } });
+}
+
 export async function deleteTask(id: number) {
   const task = await prisma.task.findUnique({ where: { id } });
   if (!task) return;

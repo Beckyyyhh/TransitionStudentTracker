@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { updateTask, addTaskNote, getTaskNotes, getWorkExperienceCompanies } from "@/lib/actions";
+import { updateTask, addTaskNote, getTaskNotes, getWorkExperienceCompanies, getTaskAttachments, deleteTaskAttachment } from "@/lib/actions";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
-import { X, Send } from "lucide-react";
+import { X, Send, Paperclip, Trash2, FileText, FileUp } from "lucide-react";
 
 type Task = {
   id: number;
@@ -30,6 +30,7 @@ type Task = {
 };
 
 type TaskNote = { id: number; content: string; createdAt: Date | string };
+type Attachment = { id: number; name: string; url: string; size: number; mimeType: string; createdAt: Date | string };
 
 const WE_CHECKLIST = [
   { key: "weSPR", label: "Filled out SPR" },
@@ -56,6 +57,8 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
   const [newNote, setNewNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
   const [companies, setCompanies] = useState<{ weCompany: string; weContactName: string; weContactPhone: string; weContactEmail: string }[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     title: task.title,
@@ -82,6 +85,7 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
     if (open) {
       getTaskNotes(task.id).then((fetched) => setNotes(fetched));
       getWorkExperienceCompanies().then(setCompanies);
+      getTaskAttachments(task.id).then((fetched) => setAttachments(fetched.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))));
     }
   }, [open, task.id]);
 
@@ -120,6 +124,47 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
     } finally {
       setNoteLoading(false);
     }
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch(`/api/upload?taskId=${task.id}`, { method: "POST", body });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? "Upload failed");
+        return;
+      }
+      const attachment = await res.json();
+      setAttachments((prev) => [...prev, attachment]);
+      toast.success("File attached");
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleDeleteAttachment(id: number) {
+    if (!confirm("Remove this attachment?")) return;
+    try {
+      await deleteTaskAttachment(id);
+      setAttachments((prev) => prev.filter((a) => a.id !== id));
+      toast.success("Attachment removed");
+    } catch {
+      toast.error("Failed to remove attachment");
+    }
+  }
+
+  function formatFileSize(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   function formatDate(d: Date | string) {
@@ -291,6 +336,44 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-1">Ctrl+Enter to post</p>
+            </div>
+
+            {/* Attachments */}
+            <hr style={{ borderColor: "#eeedfe" }} />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                  <Paperclip size={14} />
+                  Attachments
+                </label>
+                <label className={`flex items-center gap-1.5 text-xs font-semibold cursor-pointer px-2.5 py-1.5 rounded-md border transition-colors ${uploading ? "opacity-50 pointer-events-none" : "hover:bg-purple-50"}`} style={{ color: "#534ab7", borderColor: "#afa9ec" }}>
+                  <FileUp size={13} />
+                  {uploading ? "Uploading…" : "Attach file"}
+                  <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleUpload} disabled={uploading} />
+                </label>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">PDF or Word documents only, up to 10 MB</p>
+
+              {attachments.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No files attached yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between rounded-lg px-3 py-2 border" style={{ borderColor: "#eeedfe", backgroundColor: "#faf9ff" }}>
+                      <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 group">
+                        <FileText size={16} className="shrink-0" style={{ color: "#534ab7" }} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate group-hover:underline">{a.name}</p>
+                          <p className="text-xs text-gray-400">{formatFileSize(a.size)}</p>
+                        </div>
+                      </a>
+                      <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="ml-3 shrink-0 p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Remove attachment">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
