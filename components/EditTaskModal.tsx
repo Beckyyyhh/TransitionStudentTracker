@@ -361,7 +361,7 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
                 <div className="space-y-2">
                   {attachments.map((a) => (
                     <div key={a.id} className="flex items-center justify-between rounded-lg px-3 py-2 border" style={{ borderColor: "#eeedfe", backgroundColor: "#faf9ff" }}>
-                      <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 group">
+                      <a href={`/api/download?id=${a.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 group">
                         <FileText size={16} className="shrink-0" style={{ color: "#534ab7" }} />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-800 truncate group-hover:underline">{a.name}</p>

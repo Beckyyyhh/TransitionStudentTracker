@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   let blob;
   try {
-    blob = await put(`task-attachments/${taskId}/${file.name}`, file, { access: "public" });
+    blob = await put(`task-attachments/${taskId}/${file.name}`, file, { access: "private" });
   } catch (err) {
     console.error("Blob upload error:", err);
     return NextResponse.json({ error: `Storage error: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
