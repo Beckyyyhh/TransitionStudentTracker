@@ -133,10 +133,11 @@ export function EditTaskModal({ task, trigger, onSaved }: { task: Task; trigger:
     try {
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch(`/api/upload?taskId=${task.id}`, { method: "POST", body });
+      const res = await fetch(`/api/upload?taskId=${task.id}`, { method: "POST", body, credentials: "include" });
       if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error ?? "Upload failed");
+        let msg = "Upload failed";
+        try { msg = (await res.json()).error ?? msg; } catch {}
+        toast.error(msg);
         return;
       }
       const attachment = await res.json();

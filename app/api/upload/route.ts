@@ -24,17 +24,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File must be under 10 MB" }, { status: 400 });
   }
 
-  const blob = await put(`task-attachments/${taskId}/${file.name}`, file, { access: "public" });
+  let blob;
+  try {
+    blob = await put(`task-attachments/${taskId}/${file.name}`, file, { access: "public" });
+  } catch (err) {
+    console.error("Blob upload error:", err);
+    return NextResponse.json({ error: `Storage error: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
+  }
 
-  const attachment = await prisma.taskAttachment.create({
-    data: {
-      taskId: parseInt(taskId),
-      name: file.name,
-      url: blob.url,
-      size: file.size,
-      mimeType: file.type,
-    },
-  });
+  let attachment;
+  try {
+    attachment = await prisma.taskAttachment.create({
+      data: {
+        taskId: parseInt(taskId),
+        name: file.name,
+        url: blob.url,
+        size: file.size,
+        mimeType: file.type,
+      },
+    });
+  } catch (err) {
+    console.error("DB insert error:", err);
+    return NextResponse.json({ error: `Database error: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
+  }
 
   return NextResponse.json(attachment);
 }
