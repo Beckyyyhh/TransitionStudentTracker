@@ -55,6 +55,33 @@ type Task = {
 
 type Group = { studentId: number; student: Task["student"]; tasks: Task[] };
 
+const CHECKLIST_KEYS = ["weSPR", "weMyWorkExperience", "weMedicalDocs", "weWorkplaceVisited", "weSafetyGuideParent", "weSafetyGuideEmployer"] as const;
+
+function checklistCount(task: Task) {
+  return CHECKLIST_KEYS.filter((k) => task[k]).length;
+}
+
+function ChecklistProgress({ ticked, total, compact = false }: { ticked: number; total: number; compact?: boolean }) {
+  const pct = total === 0 ? 0 : Math.round((ticked / total) * 100);
+  const color = pct === 100 ? "#16a34a" : pct >= 50 ? "#d97706" : "#6b7280";
+  return (
+    <span className="inline-flex items-center gap-1.5 shrink-0" title={`Checklist: ${ticked}/${total} items ticked`}>
+      {!compact && (
+        <span className="text-xs font-bold" style={{ color }}>{ticked}/{total}</span>
+      )}
+      <span className="relative inline-block rounded-full overflow-hidden" style={{ width: compact ? 36 : 48, height: 6, backgroundColor: "#e5e7eb" }}>
+        <span
+          className="absolute left-0 top-0 h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </span>
+      {compact && (
+        <span className="text-xs font-bold" style={{ color }}>{pct}%</span>
+      )}
+    </span>
+  );
+}
+
 function TaskCard({ task, onTaskSaved }: { task: Task; onTaskSaved: (updated: Partial<Task>) => void }) {
   return (
     <div className="ml-8 mr-4 mb-3 rounded-lg border p-4" style={{ borderColor: "#eeedfe", backgroundColor: "#faf9ff" }}>
@@ -62,6 +89,7 @@ function TaskCard({ task, onTaskSaved }: { task: Task; onTaskSaved: (updated: Pa
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-sm text-gray-800">{task.title}</span>
           <StatusBadge status={task.status} />
+          <ChecklistProgress ticked={checklistCount(task)} total={CHECKLIST_KEYS.length} />
         </div>
         <WorkExperienceEditButton task={task} onSaved={onTaskSaved} />
       </div>
@@ -130,6 +158,8 @@ function SortableGroup({
   };
 
   const completedCount = group.tasks.filter((t) => t.status === "COMPLETED").length;
+  const totalTicked = group.tasks.reduce((sum, t) => sum + checklistCount(t), 0);
+  const totalPossible = group.tasks.length * CHECKLIST_KEYS.length;
 
   return (
     <div ref={setNodeRef} style={{ ...style, borderColor: "#eeedfe" }} className="border-b last:border-0">
@@ -169,6 +199,8 @@ function SortableGroup({
           {group.tasks.length} placement{group.tasks.length !== 1 ? "s" : ""}
           {completedCount > 0 && ` · ${completedCount} completed`}
         </span>
+
+        <ChecklistProgress ticked={totalTicked} total={totalPossible} compact />
       </div>
 
       {/* Expanded tasks */}
