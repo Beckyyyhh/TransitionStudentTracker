@@ -169,6 +169,7 @@ function TaskRow({
   colCount: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [saveCount, setSaveCount] = useState(0);
   const hasAttachments = (task.attachmentCount ?? 0) > 0;
 
   return (
@@ -218,6 +219,7 @@ function TaskRow({
             )}
             <EditTaskModal
               task={task}
+              onSaved={() => setSaveCount((c) => c + 1)}
               trigger={
                 <button className="p-1 transition-colors" style={{ color: "#534ab7" }} title="Edit task">
                   <Pencil size={16} />
@@ -233,7 +235,7 @@ function TaskRow({
         <tr style={{ backgroundColor: "#faf9ff" }}>
           <td colSpan={colCount} className="px-6 py-3 border-b" style={{ borderColor: "#eeedfe" }}>
             <div className="space-y-3">
-              <ExpandedNotes key={task.id} taskId={task.id} originalNote={task.notes} />
+              <ExpandedNotes key={`${task.id}-${saveCount}`} taskId={task.id} originalNote={task.notes} />
               {hasAttachments && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
