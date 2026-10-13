@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TasksFilters } from "@/components/TasksFilters";
+import { fmtDate, fmtDateTime } from "@/lib/dateFormat";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,10 @@ export default async function HistoryPage({
         ...(studentId ? { studentId: parseInt(studentId) } : {}),
         ...(status ? { status } : {}),
       },
-      include: { student: true },
+      include: {
+        student: true,
+        taskNotes: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
       orderBy: { updatedAt: "desc" },
     }),
   ]);
@@ -56,26 +60,49 @@ export default async function HistoryPage({
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((task) => (
-                  <tr key={task.id} className="border-b hover:bg-purple-50/30" style={{ borderColor: "#eeedfe" }}>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <a href={`/students/${task.studentId}`} className="font-semibold hover:underline" style={{ color: "#3d2c8d" }}>
-                        {task.student.lastName}, {task.student.firstName}
-                      </a>
-                      <span className="ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#534ab7" }}>
-                        Yr {task.student.year}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-800">{task.title}</td>
-                    <td className="px-4 py-3 text-gray-600">{task.category}</td>
-                    <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
-                    <td className="px-4 py-3 text-gray-600">{task.date}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {task.updatedAt.toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Australia/Sydney" })}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{task.notes}</td>
-                  </tr>
-                ))}
+                {tasks.map((task) => {
+                  const latestNote = task.taskNotes[0];
+                  const isAutoNote = latestNote?.content.startsWith("🔄 Updated:");
+                  const noteText = latestNote
+                    ? latestNote.content.replace("🔄 Updated:\n", "")
+                    : task.notes;
+
+                  return (
+                    <tr key={task.id} className="border-b hover:bg-purple-50/30" style={{ borderColor: "#eeedfe" }}>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <a href={`/students/${task.studentId}`} className="font-semibold hover:underline" style={{ color: "#3d2c8d" }}>
+                          {task.student.lastName}, {task.student.firstName}
+                        </a>
+                        <span className="ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#534ab7" }}>
+                          Yr {task.student.year}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-800">{task.title}</td>
+                      <td className="px-4 py-3 text-gray-600">{task.category}</td>
+                      <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
+                      <td className="px-4 py-3 text-gray-600">{fmtDate(task.date)}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                        {fmtDateTime(task.updatedAt)}
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        {noteText ? (
+                          <span
+                            className="text-xs leading-relaxed whitespace-pre-line"
+                            style={{ color: isAutoNote ? "#15803d" : "#6b7280" }}
+                            title={noteText}
+                          >
+                            {isAutoNote && (
+                              <span className="inline-block text-xs font-semibold mb-0.5" style={{ color: "#15803d" }}>⚙ </span>
+                            )}
+                            {noteText.length > 120 ? noteText.slice(0, 120) + "…" : noteText}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 italic text-xs">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
