@@ -136,6 +136,62 @@ export async function createTask(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  NOT_STARTED: "Not Started",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled / Postponed",
+};
+
+function fmtVal(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  // yyyy-mm-dd → dd-mm-yyyy
+  if (typeof v === "string") {
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  return String(v);
+}
+
+function buildChangeSummary(before: Record<string, unknown>, after: Record<string, unknown>): string {
+  const FIELD_LABELS: Record<string, string> = {
+    title: "Title",
+    status: "Status",
+    date: "Date",
+    notes: "Notes",
+    weCompany: "Company",
+    weContactName: "Contact Name",
+    weContactPhone: "Contact Phone",
+    weContactEmail: "Contact Email",
+    weStartDate: "Start Date",
+    weEndDate: "End Date",
+    weSPR: "SPR filled out",
+    weMyWorkExperience: "MyWorkExperience Module",
+    weMedicalDocs: "Medical Docs",
+    weWorkplaceVisited: "Workplace Visited",
+    weSafetyGuideParent: "Safety Guide (Parent)",
+    weSafetyGuideEmployer: "Safety Guide (Employer)",
+  };
+
+  const lines: string[] = [];
+  for (const key of Object.keys(after)) {
+    if (!(key in before)) continue;
+    const oldVal = before[key];
+    const newVal = after[key];
+    if (oldVal === newVal) continue;
+    const label = FIELD_LABELS[key] ?? key;
+    if (key === "status") {
+      lines.push(`${label}: ${STATUS_LABELS[String(oldVal)] ?? oldVal} → ${STATUS_LABELS[String(newVal)] ?? newVal}`);
+    } else if (typeof newVal === "boolean") {
+      lines.push(`${label}: ${fmtVal(newVal)}`);
+    } else {
+      lines.push(`${label}: ${fmtVal(oldVal)} → ${fmtVal(newVal)}`);
+    }
+  }
+  return lines.join("\n");
+}
+
 export async function updateTask(
   id: number,
   data: {
@@ -158,7 +214,20 @@ export async function updateTask(
     weSafetyGuideEmployer?: boolean;
   }
 ) {
+  // Fetch current values before updating so we can diff them
+  const before = await prisma.task.findUnique({ where: { id } });
   const task = await prisma.task.update({ where: { id }, data });
+
+  // Auto-generate a change note
+  if (before) {
+    const summary = buildChangeSummary(
+      before as unknown as Record<string, unknown>,
+      data as Record<string, unknown>
+    );
+    if (summary) {
+      await prisma.taskNote.create({ data: { taskId: id, content: `🔄 Updated:\n${summary}` } });
+    }
+  }
 
   // If this is a WE task, clear the sort order for this student's group so
   // the updated student automatically floats to the top of the WE page.

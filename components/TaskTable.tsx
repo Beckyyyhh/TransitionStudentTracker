@@ -86,17 +86,25 @@ function ExpandedNotes({ taskId, originalNote }: { taskId: number; originalNote:
       </button>
 
       {/* Note content */}
-      <div className="flex-1 min-w-0 rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: "#f5f4fe", border: "1px solid #eeedfe" }}>
-        <p className="text-xs text-gray-400 mb-1">
-          {current.label}
-          {allNotes.length > 1 && (
-            <span className="ml-2 font-semibold" style={{ color: "#534ab7" }}>
-              {safeIndex + 1} / {allNotes.length}
-            </span>
-          )}
-        </p>
-        <p className="text-gray-800 whitespace-pre-wrap break-words">{current.content}</p>
-      </div>
+      {(() => {
+        const isAutoNote = current.content.startsWith("🔄 Updated:");
+        return (
+          <div className="flex-1 min-w-0 rounded-lg px-3 py-2 text-sm"
+            style={isAutoNote
+              ? { backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }
+              : { backgroundColor: "#f5f4fe", border: "1px solid #eeedfe" }}>
+            <p className="text-xs mb-1" style={{ color: isAutoNote ? "#15803d" : "#9ca3af" }}>
+              {isAutoNote ? "⚙ Auto-logged · " : ""}{current.label}
+              {allNotes.length > 1 && (
+                <span className="ml-2 font-semibold" style={{ color: isAutoNote ? "#16a34a" : "#534ab7" }}>
+                  {safeIndex + 1} / {allNotes.length}
+                </span>
+              )}
+            </p>
+            <p className="text-gray-800 whitespace-pre-wrap break-words">{current.content.replace("🔄 Updated:\n", "")}</p>
+          </div>
+        );
+      })()}
 
       {/* Next arrow */}
       <button
