@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/db";
-import { SectionHeader } from "@/components/SectionHeader";
-import { WorkExperienceList } from "@/components/WorkExperienceList";
-import { WorkExperiencePastSection } from "@/components/WorkExperiencePastSection";
-import { WorkExperienceNoDatesSection } from "@/components/WorkExperienceNoDatesSection";
+import { WorkExperiencePageClient } from "@/components/WorkExperiencePageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +12,6 @@ export default async function WorkExperiencePage() {
 
   const isCustomOrdered = allTasks.some((t) => t.weSortOrder !== null);
 
-  // If custom-ordered, re-sort by weSortOrder asc (nulls last), then updatedAt desc
   const tasks = isCustomOrdered
     ? [...allTasks].sort((a, b) => {
         if (a.weSortOrder !== null && b.weSortOrder !== null) return a.weSortOrder - b.weSortOrder;
@@ -65,28 +61,6 @@ export default async function WorkExperiencePage() {
     },
   }));
 
-  const uniqueStudentIds = [...new Set(serialized.map((t) => t.studentId))];
-
-  // A student goes into "no date" if ALL their placements have no weStartDate
-  // A student goes into "past" if ALL their placements have a past end date
-  // Everyone else goes into the active list
-  const noDatTasks = serialized.filter((t) => {
-    const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
-    return studentTasks.every((x) => !x.weStartDate);
-  });
-  const noDatStudentIds = new Set(noDatTasks.map((t) => t.studentId));
-
-  const pastTasks = serialized.filter((t) => {
-    if (noDatStudentIds.has(t.studentId)) return false;
-    const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
-    return studentTasks.every((x) => x.past);
-  });
-  const pastStudentIds = new Set(pastTasks.map((t) => t.studentId));
-
-  const activeTasks = serialized.filter(
-    (t) => !noDatStudentIds.has(t.studentId) && !pastStudentIds.has(t.studentId)
-  );
-
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -111,25 +85,7 @@ export default async function WorkExperiencePage() {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
-        <SectionHeader title={`${uniqueStudentIds.length} student${uniqueStudentIds.length !== 1 ? "s" : ""}`} />
-
-        {serialized.length === 0 ? (
-          <div className="bg-white p-12 text-center text-gray-400">
-            No work experience tasks yet. Add a task with category "Work Experience" from a student's profile.
-          </div>
-        ) : (
-          <WorkExperienceList initialTasks={activeTasks} isCustomOrdered={isCustomOrdered} />
-        )}
-      </div>
-
-      {noDatTasks.length > 0 && (
-        <WorkExperienceNoDatesSection initialTasks={noDatTasks} />
-      )}
-
-      {pastTasks.length > 0 && (
-        <WorkExperiencePastSection initialTasks={pastTasks} />
-      )}
+      <WorkExperiencePageClient initialTasks={serialized} isCustomOrdered={isCustomOrdered} />
     </div>
   );
 }

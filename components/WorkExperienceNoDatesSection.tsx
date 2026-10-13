@@ -31,10 +31,10 @@ type Task = {
 
 type Group = { studentId: number; student: Task["student"]; tasks: Task[] };
 
-export function WorkExperienceNoDatesSection({ initialTasks }: { initialTasks: Task[] }) {
+export function WorkExperienceNoDatesSection({ initialTasks, onTaskSaved: onTaskSavedExternal }: { initialTasks: Task[]; onTaskSaved?: (taskId: number, updated: Partial<Task>) => void }) {
   const [open, setOpen] = useState(false);
   const [expandedStudents, setExpandedStudents] = useState<Set<number>>(new Set());
-  const [tasks, setTasks] = useState(initialTasks);
+  const tasks = initialTasks;
 
   const groups: Group[] = [];
   const seen = new Set<number>();
@@ -54,7 +54,7 @@ export function WorkExperienceNoDatesSection({ initialTasks }: { initialTasks: T
   }
 
   function handleTaskSaved(taskId: number, updated: Partial<Task>) {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updated } : t)));
+    onTaskSavedExternal?.(taskId, updated);
   }
 
   return (

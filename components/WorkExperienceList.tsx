@@ -248,7 +248,7 @@ function SortableGroup({
   );
 }
 
-export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialTasks: Task[]; isCustomOrdered: boolean }) {
+export function WorkExperienceList({ initialTasks, isCustomOrdered, onTaskSaved: onTaskSavedExternal }: { initialTasks: Task[]; isCustomOrdered: boolean; onTaskSaved?: (taskId: number, updated: Partial<Task>) => void }) {
   // Group by student, preserving server sort order
   const buildGroups = (tasks: Task[]): Group[] => {
     const map = new Map<number, Group>();
@@ -296,6 +296,7 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered }: { initialT
         tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, ...updated } : t)),
       }))
     );
+    onTaskSavedExternal?.(taskId, updated);
   }
 
   async function handleReset() {
