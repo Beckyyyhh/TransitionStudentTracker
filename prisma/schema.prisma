@@ -58,6 +58,7 @@ model WEEmployer {
   contactName  String   @default("")
   contactPhone String   @default("")
   contactEmail String   @default("")
+  address      String   @default("")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

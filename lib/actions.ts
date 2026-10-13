@@ -187,12 +187,12 @@ export async function getEmployers() {
   return prisma.wEEmployer.findMany({ orderBy: { company: "asc" } });
 }
 
-export async function createEmployer(data: { company: string; contactName: string; contactPhone: string; contactEmail: string }) {
+export async function createEmployer(data: { company: string; contactName: string; contactPhone: string; contactEmail: string; address: string }) {
   await prisma.wEEmployer.create({ data });
   revalidatePath("/work-experience/employers");
 }
 
-export async function updateEmployer(id: number, data: { company: string; contactName: string; contactPhone: string; contactEmail: string }) {
+export async function updateEmployer(id: number, data: { company: string; contactName: string; contactPhone: string; contactEmail: string; address: string }) {
   await prisma.wEEmployer.update({ where: { id }, data });
   revalidatePath("/work-experience/employers");
 }

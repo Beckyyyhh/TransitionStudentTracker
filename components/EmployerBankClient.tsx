@@ -5,13 +5,13 @@ import { createEmployer, updateEmployer, deleteEmployer } from "@/lib/actions";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, Check, X } from "lucide-react";
 
-type Employer = { id: number; company: string; contactName: string; contactPhone: string; contactEmail: string };
+type Employer = { id: number; company: string; contactName: string; contactPhone: string; contactEmail: string; address: string };
 
-const empty = { company: "", contactName: "", contactPhone: "", contactEmail: "" };
+const empty = { company: "", contactName: "", contactPhone: "", contactEmail: "", address: "" };
 
 function EmployerRow({ employer, onSaved }: { employer: Employer; onSaved: () => void }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ company: employer.company, contactName: employer.contactName, contactPhone: employer.contactPhone, contactEmail: employer.contactEmail });
+  const [form, setForm] = useState({ company: employer.company, contactName: employer.contactName, contactPhone: employer.contactPhone, contactEmail: employer.contactEmail, address: employer.address });
   const [loading, setLoading] = useState(false);
 
   async function handleSave() {
@@ -66,12 +66,16 @@ function EmployerRow({ employer, onSaved }: { employer: Employer; onSaved: () =>
             <label className="block text-xs font-semibold text-gray-600 mb-0.5">Email</label>
             <input value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={inputClass} style={borderStyle} />
           </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-semibold text-gray-600 mb-0.5">Address / Location</label>
+            <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass} style={borderStyle} placeholder="e.g. 123 Main St, Sydney NSW 2000" />
+          </div>
         </div>
         <div className="flex gap-2">
           <button onClick={handleSave} disabled={loading} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white rounded-md disabled:opacity-60" style={{ backgroundColor: "#3d2c8d" }}>
             <Check size={12} /> Save
           </button>
-          <button onClick={() => { setEditing(false); setForm({ company: employer.company, contactName: employer.contactName, contactPhone: employer.contactPhone, contactEmail: employer.contactEmail }); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border rounded-md text-gray-600 hover:bg-gray-50" style={borderStyle}>
+          <button onClick={() => { setEditing(false); setForm({ company: employer.company, contactName: employer.contactName, contactPhone: employer.contactPhone, contactEmail: employer.contactEmail, address: employer.address }); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border rounded-md text-gray-600 hover:bg-gray-50" style={borderStyle}>
             <X size={12} /> Cancel
           </button>
         </div>
@@ -86,6 +90,7 @@ function EmployerRow({ employer, onSaved }: { employer: Employer; onSaved: () =>
         <p className="text-xs text-gray-500 mt-0.5">
           {[employer.contactName, employer.contactPhone, employer.contactEmail].filter(Boolean).join(" · ") || <span className="italic">No contact info</span>}
         </p>
+        {employer.address && <p className="text-xs text-gray-400 mt-0.5">📍 {employer.address}</p>}
       </div>
       <div className="flex gap-1 shrink-0 ml-3">
         <button onClick={() => setEditing(true)} className="p-1.5 rounded hover:bg-purple-100 transition-colors" style={{ color: "#534ab7" }} title="Edit">
@@ -152,6 +157,10 @@ function AddEmployerRow({ onSaved }: { onSaved: () => void }) {
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-0.5">Email</label>
           <input value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={inputClass} style={borderStyle} placeholder="contact@company.com" />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-semibold text-gray-600 mb-0.5">Address / Location</label>
+          <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass} style={borderStyle} placeholder="e.g. 123 Main St, Sydney NSW 2000" />
         </div>
       </div>
       <div className="flex gap-2">
