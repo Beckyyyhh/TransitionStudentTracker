@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { fmtDate } from "@/lib/dateFormat";
 import { StatusBadge } from "@/components/StatusBadge";
 import { WorkExperienceEditButton } from "@/components/WorkExperienceEditButton";
 
@@ -116,7 +117,7 @@ export function WorkExperiencePastSection({ initialTasks, onTaskSaved: onTaskSav
                         </div>
                         <div>
                           <span className="font-semibold">Dates: </span>
-                          {task.weStartDate && task.weEndDate ? `${task.weStartDate} → ${task.weEndDate}` : "—"}
+                          {task.weStartDate || task.weEndDate ? `${fmtDate(task.weStartDate)} → ${fmtDate(task.weEndDate)}` : "—"}
                         </div>
                       </div>
                       {task.notes && <p className="mt-2 text-xs text-gray-400 italic">{task.notes}</p>}

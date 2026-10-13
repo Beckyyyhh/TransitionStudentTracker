@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { WorkExperienceEditButton } from "@/components/WorkExperienceEditButton";
 import { updateWorkExperienceGroupOrder, resetWorkExperienceOrder } from "@/lib/actions";
 import { GripVertical, RotateCcw, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { fmtDate } from "@/lib/dateFormat";
 
 const CHECKLIST = [
   { key: "weSPR", label: "SPR filled out" },
@@ -81,7 +82,7 @@ function StartingSoonBadge({ weStartDate }: { weStartDate: string }) {
     <span
       className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
       style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}
-      title={`Work experience starts on ${weStartDate}`}
+      title={`Work experience starts on ${fmtDate(weStartDate)}`}
     >
       <AlertTriangle size={11} />
       {label}
@@ -131,8 +132,8 @@ function TaskCard({ task, onTaskSaved }: { task: Task; onTaskSaved: (updated: Pa
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Dates</p>
           <p className="text-sm text-gray-800">
-            {task.weStartDate && task.weEndDate
-              ? `${task.weStartDate} → ${task.weEndDate}`
+            {task.weStartDate || task.weEndDate
+              ? `${fmtDate(task.weStartDate)} → ${fmtDate(task.weEndDate)}`
               : <span className="text-gray-400 italic">Not entered</span>}
           </p>
         </div>

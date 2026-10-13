@@ -5,6 +5,7 @@ import { StatusBadge } from "./StatusBadge";
 import { EditTaskModal } from "./EditTaskModal";
 import { DeleteTaskButton } from "./DeleteTaskButton";
 import { getTaskNotes, getTaskAttachments } from "@/lib/actions";
+import { fmtDate, fmtDateTime } from "@/lib/dateFormat";
 import { Pencil, ChevronDown, ChevronRight, ChevronLeft, ChevronRight as ChevronRightIcon, MessageSquare, Paperclip, FileText } from "lucide-react";
 
 type Task = {
@@ -184,12 +185,10 @@ function TaskRow({
         </td>
         <td className="px-4 py-3 text-gray-600">{task.category}</td>
         <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
-        <td className="px-4 py-3 text-gray-600">{task.date}</td>
+        <td className="px-4 py-3 text-gray-600">{fmtDate(task.date)}</td>
         {showUpdatedAt && (
           <td className="px-4 py-3 text-gray-500 text-xs">
-            {task.updatedAt
-              ? new Date(task.updatedAt).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Australia/Sydney" })
-              : "—"}
+            {task.updatedAt ? fmtDateTime(task.updatedAt) : "—"}
           </td>
         )}
         <td className="px-4 py-3 text-gray-400">
