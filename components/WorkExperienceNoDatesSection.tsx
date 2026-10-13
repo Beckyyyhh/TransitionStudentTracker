@@ -26,6 +26,7 @@ type Task = {
   weSafetyGuideParent: boolean;
   weSafetyGuideEmployer: boolean;
   past: boolean;
+  studentInactive: boolean;
   student: { firstName: string; lastName: string; year: number };
 };
 

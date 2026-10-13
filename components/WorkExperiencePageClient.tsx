@@ -27,6 +27,7 @@ export type WETask = {
   weSafetyGuideParent: boolean;
   weSafetyGuideEmployer: boolean;
   past: boolean;
+  studentInactive: boolean;
   student: { firstName: string; lastName: string; year: number };
 };
 
@@ -42,26 +43,32 @@ function isPast(weEndDate: string, status: string): boolean {
 }
 
 function splitTasks(tasks: WETask[]) {
-  // Recompute `past` from current field values
   const recomputed = tasks.map((t) => ({ ...t, past: isPast(t.weEndDate, t.status) }));
+  const allStudentIds = [...new Set(recomputed.map((t) => t.studentId))];
 
-  const noDatStudentIds = new Set(
-    [...new Set(recomputed.map((t) => t.studentId))].filter((sid) =>
-      recomputed.filter((t) => t.studentId === sid).every((t) => !t.weStartDate)
-    )
-  );
+  const isPastStudent = (sid: number) => {
+    const studentTasks = recomputed.filter((t) => t.studentId === sid);
+    // Inactive student → past
+    if (studentTasks[0]?.studentInactive) return true;
+    // Only one placement and it's completed or cancelled → past
+    if (studentTasks.length === 1 && (studentTasks[0].status === "COMPLETED" || studentTasks[0].status === "CANCELLED")) return true;
+    // All placements are past (end date passed or completed) → past
+    return studentTasks.every((t) => t.past);
+  };
 
-  const pastStudentIds = new Set(
-    [...new Set(recomputed.map((t) => t.studentId))]
-      .filter((sid) => !noDatStudentIds.has(sid))
-      .filter((sid) => recomputed.filter((t) => t.studentId === sid).every((t) => t.past))
-  );
+  const isNoDatesStudent = (sid: number) => {
+    if (isPastStudent(sid)) return false;
+    return recomputed.filter((t) => t.studentId === sid).every((t) => !t.weStartDate);
+  };
+
+  const pastStudentIds = new Set(allStudentIds.filter(isPastStudent));
+  const noDatStudentIds = new Set(allStudentIds.filter(isNoDatesStudent));
 
   return {
     activeTasks: recomputed.filter((t) => !noDatStudentIds.has(t.studentId) && !pastStudentIds.has(t.studentId)),
     noDatTasks: recomputed.filter((t) => noDatStudentIds.has(t.studentId)),
     pastTasks: recomputed.filter((t) => pastStudentIds.has(t.studentId)),
-    uniqueStudentIds: [...new Set(recomputed.map((t) => t.studentId))],
+    uniqueStudentIds: allStudentIds,
   };
 }
 

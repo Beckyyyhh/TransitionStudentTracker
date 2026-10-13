@@ -54,6 +54,7 @@ export default async function WorkExperiencePage() {
     weSafetyGuideParent: t.weSafetyGuideParent,
     weSafetyGuideEmployer: t.weSafetyGuideEmployer,
     past: isPast(t.weEndDate, t.status),
+    studentInactive: t.student.inactive,
     student: {
       firstName: t.student.firstName,
       lastName: t.student.lastName,

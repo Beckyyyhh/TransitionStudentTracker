@@ -50,6 +50,7 @@ type Task = {
   weWorkplaceVisited: boolean;
   weSafetyGuideParent: boolean;
   weSafetyGuideEmployer: boolean;
+  studentInactive: boolean;
   student: { firstName: string; lastName: string; year: number };
 };
 
