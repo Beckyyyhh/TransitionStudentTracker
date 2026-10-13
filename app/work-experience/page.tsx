@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { SectionHeader } from "@/components/SectionHeader";
 import { WorkExperienceList } from "@/components/WorkExperienceList";
 import { WorkExperiencePastSection } from "@/components/WorkExperiencePastSection";
+import { WorkExperienceNoDatesSection } from "@/components/WorkExperienceNoDatesSection";
 
 export const dynamic = "force-dynamic";
 
@@ -64,14 +65,26 @@ export default async function WorkExperiencePage() {
   }));
 
   const uniqueStudentIds = [...new Set(serialized.map((t) => t.studentId))];
-  const activeTasks = serialized.filter((t) => {
+
+  // A student goes into "no date" if ALL their placements have no weStartDate
+  // A student goes into "past" if ALL their placements have a past end date
+  // Everyone else goes into the active list
+  const noDatTasks = serialized.filter((t) => {
     const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
-    return !studentTasks.every((x) => x.past);
+    return studentTasks.every((x) => !x.weStartDate);
   });
+  const noDatStudentIds = new Set(noDatTasks.map((t) => t.studentId));
+
   const pastTasks = serialized.filter((t) => {
+    if (noDatStudentIds.has(t.studentId)) return false;
     const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
     return studentTasks.every((x) => x.past);
   });
+  const pastStudentIds = new Set(pastTasks.map((t) => t.studentId));
+
+  const activeTasks = serialized.filter(
+    (t) => !noDatStudentIds.has(t.studentId) && !pastStudentIds.has(t.studentId)
+  );
 
   return (
     <div>
@@ -108,6 +121,10 @@ export default async function WorkExperiencePage() {
           <WorkExperienceList initialTasks={activeTasks} isCustomOrdered={isCustomOrdered} />
         )}
       </div>
+
+      {noDatTasks.length > 0 && (
+        <WorkExperienceNoDatesSection initialTasks={noDatTasks} />
+      )}
 
       {pastTasks.length > 0 && (
         <WorkExperiencePastSection initialTasks={pastTasks} />
