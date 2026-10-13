@@ -101,6 +101,17 @@ export async function toggleAtRisk(id: number, atRisk: boolean) {
   revalidatePath("/students");
 }
 
+export async function toggleStudentInactive(id: number, inactive: boolean) {
+  await prisma.student.update({ where: { id }, data: { inactive } });
+  revalidatePath(`/students/${id}`);
+  revalidatePath("/students");
+}
+
+export async function setYearGroupInactive(year: number) {
+  await prisma.student.updateMany({ where: { year, weOnly: false }, data: { inactive: true } });
+  revalidatePath("/students");
+}
+
 export async function deleteStudent(id: number) {
   await prisma.student.delete({ where: { id } });
   revalidatePath("/students");

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { StudentProfileTabs } from "@/components/StudentProfileTabs";
 import { DeleteStudentButton } from "@/components/DeleteStudentButton";
 import { AtRiskToggle } from "@/components/AtRiskToggle";
+import { InactiveToggle } from "@/components/InactiveToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -63,8 +64,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <AtRiskToggle studentId={student.id} atRisk={student.atRisk} />
+                <InactiveToggle studentId={student.id} inactive={student.inactive} />
                 <DeleteStudentButton studentId={student.id} />
               </div>
             <div className="flex gap-4 text-center">

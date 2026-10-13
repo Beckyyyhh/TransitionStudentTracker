@@ -16,6 +16,7 @@ model Student {
   notes     String   @default("")
   atRisk    Boolean  @default(false)
   weOnly    Boolean  @default(false)
+  inactive  Boolean  @default(false)
   createdAt DateTime @default(now())
   tasks     Task[]
 }
