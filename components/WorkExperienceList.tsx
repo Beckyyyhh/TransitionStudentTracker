@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -267,6 +267,23 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered, onTaskSaved:
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [customOrdered, setCustomOrdered] = useState(isCustomOrdered);
+
+  // When initialTasks changes (e.g. a student moves in from another section),
+  // add any new students to the top of the list while preserving existing order.
+  const prevTaskIdsRef = useRef(new Set(initialTasks.map((t) => t.id)));
+  useEffect(() => {
+    const newTasks = initialTasks.filter((t) => !prevTaskIdsRef.current.has(t.id));
+    if (newTasks.length > 0) {
+      const newGroups = buildGroups(newTasks);
+      setGroups((prev) => {
+        // Merge updated tasks into existing groups, prepend genuinely new groups
+        const existingIds = new Set(prev.map((g) => g.studentId));
+        const brandNew = newGroups.filter((g) => !existingIds.has(g.studentId));
+        return [...brandNew, ...prev];
+      });
+    }
+    prevTaskIdsRef.current = new Set(initialTasks.map((t) => t.id));
+  }, [initialTasks]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
