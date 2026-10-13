@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { StatusBadge } from "@/components/StatusBadge";
 import { WorkExperienceEditButton } from "@/components/WorkExperienceEditButton";
 import { updateWorkExperienceGroupOrder, resetWorkExperienceOrder } from "@/lib/actions";
-import { GripVertical, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { GripVertical, RotateCcw, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 
 const CHECKLIST = [
   { key: "weSPR", label: "SPR filled out" },
@@ -61,6 +61,33 @@ function checklistCount(task: Task) {
   return CHECKLIST_KEYS.filter((k) => task[k]).length;
 }
 
+function startingSoonDays(weStartDate: string): number | null {
+  if (!weStartDate) return null;
+  const start = new Date(weStartDate);
+  if (isNaN(start.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+  const diff = Math.round((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function StartingSoonBadge({ weStartDate }: { weStartDate: string }) {
+  const days = startingSoonDays(weStartDate);
+  if (days === null || days > 7 || days < 0) return null;
+  const label = days === 0 ? "Starts today!" : days === 1 ? "Starts tomorrow!" : `Starts in ${days} days`;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+      style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}
+      title={`Work experience starts on ${weStartDate}`}
+    >
+      <AlertTriangle size={11} />
+      {label}
+    </span>
+  );
+}
+
 function ChecklistProgress({ ticked, total, compact = false }: { ticked: number; total: number; compact?: boolean }) {
   const pct = total === 0 ? 0 : Math.round((ticked / total) * 100);
   const color = pct === 100 ? "#16a34a" : pct >= 50 ? "#d97706" : "#6b7280";
@@ -90,6 +117,7 @@ function TaskCard({ task, onTaskSaved }: { task: Task; onTaskSaved: (updated: Pa
           <span className="font-semibold text-sm text-gray-800">{task.title}</span>
           <StatusBadge status={task.status} />
           <ChecklistProgress ticked={checklistCount(task)} total={CHECKLIST_KEYS.length} />
+          <StartingSoonBadge weStartDate={task.weStartDate} />
         </div>
         <WorkExperienceEditButton task={task} onSaved={onTaskSaved} />
       </div>
@@ -160,6 +188,10 @@ function SortableGroup({
   const completedCount = group.tasks.filter((t) => t.status === "COMPLETED").length;
   const totalTicked = group.tasks.reduce((sum, t) => sum + checklistCount(t), 0);
   const totalPossible = group.tasks.length * CHECKLIST_KEYS.length;
+  const soonTask = group.tasks
+    .map((t) => ({ task: t, days: startingSoonDays(t.weStartDate) }))
+    .filter(({ days }) => days !== null && days >= 0 && days <= 7)
+    .sort((a, b) => a.days! - b.days!)[0];
 
   return (
     <div ref={setNodeRef} style={{ ...style, borderColor: "#eeedfe" }} className="border-b last:border-0">
@@ -201,6 +233,7 @@ function SortableGroup({
         </span>
 
         <ChecklistProgress ticked={totalTicked} total={totalPossible} compact />
+        {soonTask && <StartingSoonBadge weStartDate={soonTask.task.weStartDate} />}
       </div>
 
       {/* Expanded tasks */}
