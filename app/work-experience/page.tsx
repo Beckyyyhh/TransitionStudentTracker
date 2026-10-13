@@ -1,20 +1,39 @@
 import { prisma } from "@/lib/db";
 import { SectionHeader } from "@/components/SectionHeader";
 import { WorkExperienceList } from "@/components/WorkExperienceList";
+import { WorkExperiencePastSection } from "@/components/WorkExperiencePastSection";
 
 export const dynamic = "force-dynamic";
 
 export default async function WorkExperiencePage() {
-  const tasks = await prisma.task.findMany({
+  const allTasks = await prisma.task.findMany({
     where: { category: "Work Experience" },
     include: { student: true },
-    orderBy: [
-      { weSortOrder: { sort: "asc", nulls: "last" } },
-      { updatedAt: "desc" },
-    ],
+    orderBy: { updatedAt: "desc" },
   });
 
-  const isCustomOrdered = tasks.some((t) => t.weSortOrder !== null);
+  const isCustomOrdered = allTasks.some((t) => t.weSortOrder !== null);
+
+  // If custom-ordered, re-sort by weSortOrder asc (nulls last), then updatedAt desc
+  const tasks = isCustomOrdered
+    ? [...allTasks].sort((a, b) => {
+        if (a.weSortOrder !== null && b.weSortOrder !== null) return a.weSortOrder - b.weSortOrder;
+        if (a.weSortOrder !== null) return -1;
+        if (b.weSortOrder !== null) return 1;
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
+      })
+    : allTasks;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function isPast(weEndDate: string) {
+    if (!weEndDate) return false;
+    const end = new Date(weEndDate);
+    if (isNaN(end.getTime())) return false;
+    end.setHours(0, 0, 0, 0);
+    return end < today;
+  }
 
   const serialized = tasks.map((t) => ({
     id: t.id,
@@ -36,12 +55,23 @@ export default async function WorkExperiencePage() {
     weWorkplaceVisited: t.weWorkplaceVisited,
     weSafetyGuideParent: t.weSafetyGuideParent,
     weSafetyGuideEmployer: t.weSafetyGuideEmployer,
+    past: isPast(t.weEndDate),
     student: {
       firstName: t.student.firstName,
       lastName: t.student.lastName,
       year: t.student.year,
     },
   }));
+
+  const uniqueStudentIds = [...new Set(serialized.map((t) => t.studentId))];
+  const activeTasks = serialized.filter((t) => {
+    const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
+    return !studentTasks.every((x) => x.past);
+  });
+  const pastTasks = serialized.filter((t) => {
+    const studentTasks = serialized.filter((x) => x.studentId === t.studentId);
+    return studentTasks.every((x) => x.past);
+  });
 
   return (
     <div>
@@ -68,16 +98,20 @@ export default async function WorkExperiencePage() {
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
-        <SectionHeader title={`${tasks.length} student${tasks.length !== 1 ? "s" : ""}`} />
+        <SectionHeader title={`${uniqueStudentIds.length} student${uniqueStudentIds.length !== 1 ? "s" : ""}`} />
 
-        {tasks.length === 0 ? (
+        {serialized.length === 0 ? (
           <div className="bg-white p-12 text-center text-gray-400">
             No work experience tasks yet. Add a task with category "Work Experience" from a student's profile.
           </div>
         ) : (
-          <WorkExperienceList initialTasks={serialized} isCustomOrdered={isCustomOrdered} />
+          <WorkExperienceList initialTasks={activeTasks} isCustomOrdered={isCustomOrdered} />
         )}
       </div>
+
+      {pastTasks.length > 0 && (
+        <WorkExperiencePastSection initialTasks={pastTasks} />
+      )}
     </div>
   );
 }
