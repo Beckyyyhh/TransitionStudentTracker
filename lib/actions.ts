@@ -58,6 +58,8 @@ export async function createWETaskForExistingStudent(studentId: number, data: {
       weEndDate: data.weEndDate || "",
     },
   });
+  // Clear any custom sort so this student appears at the top
+  await prisma.$executeRaw`UPDATE "Task" SET "weSortOrder" = NULL WHERE "studentId" = ${studentId} AND category = 'Work Experience'`;
   revalidatePath("/work-experience");
   revalidatePath(`/students/${studentId}`);
 }
@@ -146,10 +148,18 @@ export async function updateTask(
   }
 ) {
   const task = await prisma.task.update({ where: { id }, data });
+
+  // If this is a WE task, clear the sort order for this student's group so
+  // the updated student automatically floats to the top of the WE page.
+  if (task.category === "Work Experience") {
+    await prisma.$executeRaw`UPDATE "Task" SET "weSortOrder" = NULL WHERE "studentId" = ${task.studentId} AND category = 'Work Experience'`;
+  }
+
   revalidatePath(`/students/${task.studentId}`);
   revalidatePath("/tasks");
   revalidatePath("/history");
   revalidatePath("/dashboard");
+  revalidatePath("/work-experience");
 }
 
 export async function getWorkExperienceCompanies() {
