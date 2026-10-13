@@ -28,7 +28,8 @@ export default async function WorkExperiencePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  function isPast(weEndDate: string) {
+  function isPast(weEndDate: string, status: string) {
+    if (status === "COMPLETED") return true;
     if (!weEndDate) return false;
     const end = new Date(weEndDate);
     if (isNaN(end.getTime())) return false;
@@ -56,7 +57,7 @@ export default async function WorkExperiencePage() {
     weWorkplaceVisited: t.weWorkplaceVisited,
     weSafetyGuideParent: t.weSafetyGuideParent,
     weSafetyGuideEmployer: t.weSafetyGuideEmployer,
-    past: isPast(t.weEndDate),
+    past: isPast(t.weEndDate, t.status),
     student: {
       firstName: t.student.firstName,
       lastName: t.student.lastName,
