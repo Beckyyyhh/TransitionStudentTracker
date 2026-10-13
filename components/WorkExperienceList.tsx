@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -268,21 +268,19 @@ export function WorkExperienceList({ initialTasks, isCustomOrdered, onTaskSaved:
   const [saving, setSaving] = useState(false);
   const [customOrdered, setCustomOrdered] = useState(isCustomOrdered);
 
-  // When initialTasks changes (e.g. a student moves in from another section),
-  // add any new students to the top of the list while preserving existing order.
-  const prevTaskIdsRef = useRef(new Set(initialTasks.map((t) => t.id)));
+  // Sync groups whenever initialTasks changes — handles students moving in or out.
   useEffect(() => {
-    const newTasks = initialTasks.filter((t) => !prevTaskIdsRef.current.has(t.id));
-    if (newTasks.length > 0) {
-      const newGroups = buildGroups(newTasks);
-      setGroups((prev) => {
-        // Merge updated tasks into existing groups, prepend genuinely new groups
-        const existingIds = new Set(prev.map((g) => g.studentId));
-        const brandNew = newGroups.filter((g) => !existingIds.has(g.studentId));
-        return [...brandNew, ...prev];
-      });
-    }
-    prevTaskIdsRef.current = new Set(initialTasks.map((t) => t.id));
+    const activeStudentIds = new Set(initialTasks.map((t) => t.studentId));
+    const incomingGroups = buildGroups(initialTasks);
+
+    setGroups((prev) => {
+      // Remove students no longer in active list
+      const kept = prev.filter((g) => activeStudentIds.has(g.studentId));
+      // Add students newly arriving (prepend to top)
+      const keptIds = new Set(kept.map((g) => g.studentId));
+      const brandNew = incomingGroups.filter((g) => !keptIds.has(g.studentId));
+      return [...brandNew, ...kept];
+    });
   }, [initialTasks]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
