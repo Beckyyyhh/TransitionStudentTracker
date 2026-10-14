@@ -337,6 +337,13 @@ export async function deleteTask(id: number) {
   await prisma.task.delete({ where: { id } });
   revalidatePath(`/students/${task.studentId}`);
   revalidatePath("/tasks");
+  revalidatePath("/work-experience");
   revalidatePath("/history");
   revalidatePath("/dashboard");
+}
+
+export async function deleteAllTasksForStudent(studentId: number, category: string) {
+  await prisma.task.deleteMany({ where: { studentId, category } });
+  revalidatePath("/work-experience");
+  revalidatePath(`/students/${studentId}`);
 }

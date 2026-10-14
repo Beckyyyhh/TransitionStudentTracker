@@ -85,6 +85,10 @@ export function WorkExperiencePageClient({
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updated } : t)));
   }
 
+  function handleStudentDeleted(studentId: number) {
+    setTasks((prev) => prev.filter((t) => t.studentId !== studentId));
+  }
+
   const { activeTasks, noDatTasks, pastTasks, uniqueStudentIds } = useMemo(
     () => splitTasks(tasks),
     [tasks]
@@ -108,7 +112,7 @@ export function WorkExperiencePageClient({
       </div>
 
       {noDatTasks.length > 0 && (
-        <WorkExperienceNoDatesSection initialTasks={noDatTasks} onTaskSaved={handleTaskSaved} />
+        <WorkExperienceNoDatesSection initialTasks={noDatTasks} onTaskSaved={handleTaskSaved} onStudentDeleted={handleStudentDeleted} />
       )}
 
       {pastTasks.length > 0 && (

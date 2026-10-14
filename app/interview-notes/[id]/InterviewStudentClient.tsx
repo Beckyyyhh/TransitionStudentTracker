@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, Send, Printer, Mail, RefreshCw, ChevronDown, ChevronRight as ChevronRightIcon, Trash2 } from "lucide-react";
@@ -660,8 +660,11 @@ export function InterviewStudentClient({ student }: { student: Student }) {
   const [activeTab, setActiveTab] = useState(0);
   const [checklistData, setChecklistData] = useState(student.checklistData);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [notes, setNotes] = useState<Note[]>(student.notes);
   const router = useRouter();
+  const isFirstRender = useRef(true);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -671,6 +674,19 @@ export function InterviewStudentClient({ student }: { student: Student }) {
       if (!isNaN(idx) && idx >= 0 && idx < TAB_NAMES.length) setActiveTab(idx);
     }
   }, []);
+
+  // Auto-save checklist silently on every change (debounced 1.5s)
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaving(true);
+      try { await saveInterviewChecklist(student.id, checklistData); }
+      finally { setAutoSaving(false); }
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklistData]);
 
   function pushNote(note: Note) {
     setNotes((prev) => [...prev, note]);
@@ -699,6 +715,8 @@ export function InterviewStudentClient({ student }: { student: Student }) {
   async function handleSaveChecklist() {
     setSaving(true);
     try {
+      // Cancel any pending auto-save so we don't double-write
+      if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; }
       await saveInterviewChecklist(student.id, checklistData);
       const summary = buildFullSummary(checklistData, student.id);
       const saved = await addInterviewNote(student.id, summary, false);
@@ -767,7 +785,9 @@ export function InterviewStudentClient({ student }: { student: Student }) {
             {activeTab === 7 && <Tab6 data={checklistData} onChange={setChecklistData} student={student} />}
           </div>
           <div className="px-4 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: "#eeedfe" }}>
-            <p className="text-xs text-gray-400">Saving creates a full summary entry in Notes &amp; Updates below.</p>
+            <p className="text-xs text-gray-400">
+              {autoSaving ? <span className="text-amber-500 font-semibold">Auto-saving…</span> : "Changes auto-save · pressing Save records a summary in Notes & Updates."}
+            </p>
             <div className="flex gap-2">
               <button onClick={handleFollowUp} disabled={saving}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border disabled:opacity-50 transition-colors hover:bg-amber-50"

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, CalendarX } from "lucide-react";
+import { ChevronDown, ChevronRight, CalendarX, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { deleteAllTasksForStudent } from "@/lib/actions";
 import { StatusBadge } from "@/components/StatusBadge";
 import { WorkExperienceEditButton } from "@/components/WorkExperienceEditButton";
 
@@ -32,9 +34,10 @@ type Task = {
 
 type Group = { studentId: number; student: Task["student"]; tasks: Task[] };
 
-export function WorkExperienceNoDatesSection({ initialTasks, onTaskSaved: onTaskSavedExternal }: { initialTasks: Task[]; onTaskSaved?: (taskId: number, updated: Partial<Task>) => void }) {
+export function WorkExperienceNoDatesSection({ initialTasks, onTaskSaved: onTaskSavedExternal, onStudentDeleted }: { initialTasks: Task[]; onTaskSaved?: (taskId: number, updated: Partial<Task>) => void; onStudentDeleted?: (studentId: number) => void }) {
   const [open, setOpen] = useState(false);
   const [expandedStudents, setExpandedStudents] = useState<Set<number>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const tasks = initialTasks;
 
   const groups: Group[] = [];
@@ -56,6 +59,20 @@ export function WorkExperienceNoDatesSection({ initialTasks, onTaskSaved: onTask
 
   function handleTaskSaved(taskId: number, updated: Partial<Task>) {
     onTaskSavedExternal?.(taskId, updated);
+  }
+
+  async function handleDeleteStudent(studentId: number, name: string) {
+    if (!confirm(`Remove ${name} from the Work Experience tab?`)) return;
+    setDeletingId(studentId);
+    try {
+      await deleteAllTasksForStudent(studentId, "Work Experience");
+      onStudentDeleted?.(studentId);
+      toast.success(`${name} removed from Work Experience`);
+    } catch {
+      toast.error("Failed to remove student");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -99,6 +116,15 @@ export function WorkExperienceNoDatesSection({ initialTasks, onTaskSaved: onTask
                 <span className="text-xs text-gray-400">
                   {group.tasks.length} placement{group.tasks.length !== 1 ? "s" : ""}
                 </span>
+                <button
+                  type="button"
+                  disabled={deletingId === group.studentId}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteStudent(group.studentId, `${group.student.firstName} ${group.student.lastName}`); }}
+                  className="ml-auto text-gray-300 hover:text-red-400 disabled:opacity-40 transition-colors"
+                  title="Remove from Work Experience"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
 
               {expandedStudents.has(group.studentId) && (
