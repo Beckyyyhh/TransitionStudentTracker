@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, Send, Printer, Mail, RefreshCw, ChevronDown, ChevronRight as ChevronRightIcon, Trash2 } from "lucide-react";
-import { addInterviewNote, saveInterviewChecklist, deleteInterviewNote } from "@/lib/interviewActions";
+import { addInterviewNote, saveInterviewChecklist, deleteInterviewNote, addInterviewStudentToWE } from "@/lib/interviewActions";
 import { fmtDateTime, fmtDate } from "@/lib/dateFormat";
 
 type Note = { id: number; content: string; isFollowUp: boolean; createdAt: string };
@@ -55,7 +55,7 @@ const PATHWAY_LABELS: Record<string, string> = {
 const REFERRALS = [
   { key: "tafe", label: "TAFE referral" },
   { key: "university", label: "University Open Day" },
-  { key: "workExperience", label: "Work Experience" },
+  { key: "workExperience", label: "Work Experience referral" },
   { key: "wellbeing", label: "Student Services / Wellbeing" },
 ];
 
@@ -326,11 +326,17 @@ function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
   );
 }
 
-function Tab4({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+function Tab4({ data, onChange, onWEPending }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; onWEPending: () => Promise<void> }) {
   const refs = getObj(data, "referrals");
   function toggle(key: string, field: string) {
     const row = getObj(refs as Record<string, unknown>, key);
     onChange({ ...data, referrals: { ...refs, [key]: { ...row, [field]: !row[field] } } });
+  }
+  async function toggleWEPending() {
+    const row = getObj(refs as Record<string, unknown>, "workExperience");
+    const nowPending = !getBool(row, "pending");
+    onChange({ ...data, referrals: { ...refs, workExperience: { ...row, pending: nowPending } } });
+    if (nowPending) await onWEPending();
   }
   function setNote(key: string, val: string) {
     const row = getObj(refs as Record<string, unknown>, key);
@@ -340,13 +346,17 @@ function Tab4({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
     <div className="space-y-4 p-4">
       {REFERRALS.map(({ key, label }) => {
         const row = getObj(refs as Record<string, unknown>, key);
+        const isWE = key === "workExperience";
         return (
           <div key={key} className="border rounded-lg p-4" style={{ borderColor: "#eeedfe" }}>
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <span className="font-semibold text-gray-700">{label}</span>
-              <CheckboxChip label="Made" checked={getBool(row, "made")} onChange={() => toggle(key, "made")} />
-              <CheckboxChip label="Pending" checked={getBool(row, "pending")} onChange={() => toggle(key, "pending")} />
+              {!isWE && <CheckboxChip label="Made" checked={getBool(row, "made")} onChange={() => toggle(key, "made")} />}
+              <CheckboxChip label="Pending" checked={getBool(row, "pending")} onChange={isWE ? toggleWEPending : () => toggle(key, "pending")} />
               <CheckboxChip label="Completed" checked={getBool(row, "completed")} onChange={() => toggle(key, "completed")} />
+              {isWE && getBool(row, "pending") && (
+                <span className="text-xs text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded-full">Added to Work Experience tab</span>
+              )}
             </div>
             <SectionNotes label={label} value={getStr(row, "notes")} onChange={(v) => setNote(key, v)} />
           </div>
@@ -659,6 +669,12 @@ export function InterviewStudentClient({ student }: { student: Student }) {
     setNotes((prev) => [...prev, note]);
   }
 
+  async function handleWEPending() {
+    const result = await addInterviewStudentToWE(student.id);
+    if (result.ok) toast.success(result.message);
+    else toast.error(result.message);
+  }
+
   async function handleDeleteNote(id: number) {
     await deleteInterviewNote(id, student.id);
     setNotes((prev) => prev.filter((n) => n.id !== id));
@@ -731,7 +747,7 @@ export function InterviewStudentClient({ student }: { student: Student }) {
             {activeTab === 2 && <Tab3 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 3 && <Tab7 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 4 && <Tab8 data={checklistData} onChange={setChecklistData} />}
-            {activeTab === 5 && <Tab4 data={checklistData} onChange={setChecklistData} />}
+            {activeTab === 5 && <Tab4 data={checklistData} onChange={setChecklistData} onWEPending={handleWEPending} />}
             {activeTab === 6 && <Tab5 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 7 && <Tab6 data={checklistData} onChange={setChecklistData} student={student} />}
           </div>
