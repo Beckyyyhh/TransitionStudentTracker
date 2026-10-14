@@ -46,7 +46,7 @@ const PATHWAYS = [
   { key: "employment", label: "Direct Employment" },
   { key: "other", label: "Other" },
 ];
-const PATHWAY_OPTIONS = ["Not Aware", "Aware", "Interested", "Researched"];
+const PATHWAY_OPTIONS = ["Not Aware", "Interested", "Not Interested", "Researched"];
 
 const REFERRALS = [
   { key: "tafe", label: "TAFE referral" },
