@@ -53,6 +53,7 @@ function followUpDaysUntil(data: Record<string, unknown>): number | null {
 export function InterviewNotesClient({ students: initialStudents }: { students: Student[] }) {
   const [search, setSearch] = useState("");
   const [students, setStudents] = useState(initialStudents);
+  const [navigatingId, setNavigatingId] = useState<number | null>(null);
 
   useEffect(() => {
     setStudents(initialStudents);
@@ -191,12 +192,21 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
               {filtered.map((s) => (
                 <tr
                   key={s.id}
-                  className="border-b hover:bg-purple-50/30 cursor-pointer transition-colors"
-                  style={{ borderColor: "#eeedfe" }}
-                  onClick={() => router.push(`/interview-notes/${s.id}`)}
+                  className="border-b cursor-pointer transition-all"
+                  style={{
+                    borderColor: "#eeedfe",
+                    backgroundColor: navigatingId === s.id ? "#ede9ff" : undefined,
+                    opacity: navigatingId !== null && navigatingId !== s.id ? 0.5 : 1,
+                  }}
+                  onClick={() => { setNavigatingId(s.id); router.push(`/interview-notes/${s.id}`); }}
                 >
                   <td className="px-4 py-3 font-semibold" style={{ color: "#26215c" }}>
-                    <span>{s.lastName}, {s.firstName}</span>
+                    <span className="inline-flex items-center gap-2">
+                      {s.lastName}, {s.firstName}
+                      {navigatingId === s.id && (
+                        <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-purple-300 border-t-purple-700 animate-spin" />
+                      )}
+                    </span>
                     {(() => {
                       const days = followUpDaysUntil(s.checklistData);
                       if (days === null) return null;

@@ -549,16 +549,18 @@ function NoteEntry({ note, onDelete }: { note: Note; onDelete: (id: number) => v
   }
 
   return (
-    <div className="rounded-lg px-3 py-2 text-sm" style={bgStyle}>
+    <div
+      className="rounded-lg px-3 py-2 text-sm select-none"
+      style={{ ...bgStyle, cursor: hasMore ? "pointer" : "default" }}
+      onClick={hasMore ? () => setExpanded((v) => !v) : undefined}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs mb-1" style={{ color: labelColor }}>{prefix}{fmtDateTime(note.createdAt)}</p>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           {hasMore && (
-            <button type="button" onClick={() => setExpanded((v) => !v)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              title={expanded ? "Collapse" : "Expand"}>
+            <span className="text-gray-400">
               {expanded ? <ChevronDown size={14} /> : <ChevronRightIcon size={14} />}
-            </button>
+            </span>
           )}
           <button type="button" onClick={handleDelete} disabled={deleting}
             className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40"
@@ -570,7 +572,7 @@ function NoteEntry({ note, onDelete }: { note: Note; onDelete: (id: number) => v
       {expanded || !hasMore ? (
         <p className="text-gray-800 whitespace-pre-wrap break-words">{renderNoteContent(note.content)}</p>
       ) : (
-        <p className="text-gray-800 truncate cursor-pointer" onClick={() => setExpanded(true)}>{firstLine}</p>
+        <p className="text-gray-800 truncate">{firstLine}</p>
       )}
     </div>
   );
