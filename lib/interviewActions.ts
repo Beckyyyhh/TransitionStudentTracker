@@ -91,6 +91,12 @@ export async function importInterviewStudents(
   revalidatePath("/interview-notes");
 }
 
+export async function addInterviewStudent(data: { firstName: string; lastName: string; studentId: string; email: string }) {
+  const student = await prisma.interviewStudent.create({ data });
+  revalidatePath("/interview-notes");
+  return { id: student.id, firstName: student.firstName, lastName: student.lastName, studentId: student.studentId, email: student.email };
+}
+
 export async function clearAllInterviewStudents() {
   await prisma.interviewStudent.deleteMany({});
   revalidatePath("/interview-notes");

@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, Upload, Download, Trash2, ChevronRight } from "lucide-react";
-import { clearAllInterviewStudents } from "@/lib/interviewActions";
+import { Search, Upload, Download, Trash2, ChevronRight, UserPlus, X } from "lucide-react";
+import { clearAllInterviewStudents, addInterviewStudent } from "@/lib/interviewActions";
 import { fmtDateTime } from "@/lib/dateFormat";
 
 type Student = {
@@ -54,6 +54,9 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
   const [search, setSearch] = useState("");
   const [students, setStudents] = useState(initialStudents);
   const [navigatingId, setNavigatingId] = useState<number | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({ firstName: "", lastName: "", studentId: "", email: "" });
+  const [addSaving, setAddSaving] = useState(false);
 
   useEffect(() => {
     setStudents(initialStudents);
@@ -90,6 +93,32 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleAddStudent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addForm.firstName.trim() || !addForm.lastName.trim()) {
+      toast.error("First name and surname are required");
+      return;
+    }
+    setAddSaving(true);
+    try {
+      const newStudent = await addInterviewStudent({
+        firstName: addForm.firstName.trim(),
+        lastName: addForm.lastName.trim(),
+        studentId: addForm.studentId.trim(),
+        email: addForm.email.trim(),
+      });
+      setStudents((prev) => [...prev, { ...newStudent, latestNote: null, checklistData: {} }]);
+      setAddForm({ firstName: "", lastName: "", studentId: "", email: "" });
+      setShowAddForm(false);
+      toast.success(`${newStudent.firstName} ${newStudent.lastName} added`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to add student");
+    } finally {
+      setAddSaving(false);
     }
   }
 
@@ -147,6 +176,15 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
         </button>
 
         <button
+          onClick={() => setShowAddForm((v) => !v)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors hover:bg-purple-50"
+          style={{ color: "#534ab7", borderColor: "#afa9ec" }}
+        >
+          <UserPlus size={14} />
+          Add Student
+        </button>
+
+        <button
           onClick={handleClearAll}
           disabled={clearing || students.length === 0}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 transition-colors"
@@ -155,6 +193,59 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
           {clearing ? "Clearing…" : "Remove All"}
         </button>
       </div>
+
+      {/* Add Student inline form */}
+      {showAddForm && (
+        <form onSubmit={handleAddStudent} className="px-4 py-4 border-b bg-purple-50/40" style={{ borderColor: "#eeedfe" }}>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600">First Name *</label>
+              <input
+                type="text" required value={addForm.firstName}
+                onChange={(e) => setAddForm((f) => ({ ...f, firstName: e.target.value }))}
+                className="text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 w-36"
+                style={{ borderColor: "#afa9ec" }} placeholder="e.g. Jane"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600">Surname *</label>
+              <input
+                type="text" required value={addForm.lastName}
+                onChange={(e) => setAddForm((f) => ({ ...f, lastName: e.target.value }))}
+                className="text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 w-36"
+                style={{ borderColor: "#afa9ec" }} placeholder="e.g. Smith"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600">Student ID</label>
+              <input
+                type="text" value={addForm.studentId}
+                onChange={(e) => setAddForm((f) => ({ ...f, studentId: e.target.value }))}
+                className="text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 w-32"
+                style={{ borderColor: "#afa9ec" }} placeholder="e.g. 123456"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-600">Email</label>
+              <input
+                type="email" value={addForm.email}
+                onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                className="text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 w-52"
+                style={{ borderColor: "#afa9ec" }} placeholder="e.g. jane@school.edu.au"
+              />
+            </div>
+            <button type="submit" disabled={addSaving}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-colors"
+              style={{ backgroundColor: "#3d2c8d" }}>
+              {addSaving ? "Adding…" : "Add"}
+            </button>
+            <button type="button" onClick={() => setShowAddForm(false)}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Template download hint */}
       <div className="px-4 py-2 bg-purple-50/50 border-b text-xs text-gray-500" style={{ borderColor: "#eeedfe" }}>
