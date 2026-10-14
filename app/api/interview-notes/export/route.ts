@@ -29,7 +29,7 @@ export async function GET() {
   const students = await prisma.interviewStudent.findMany({
     orderBy: { lastName: "asc" },
     include: {
-      notes: { orderBy: { createdAt: "desc" }, take: 1 },
+      notes: { orderBy: { createdAt: "asc" } },
       checklist: { select: { data: true } },
     },
   });
@@ -37,12 +37,19 @@ export async function GET() {
   const rows = students.map((s) => {
     const data = (s.checklist?.data ?? {}) as Record<string, unknown>;
     const outcomes = (data.outcomes ?? {}) as Record<string, unknown>;
+    const allNotes = s.notes
+      .map((n) => {
+        const dateStr = n.createdAt.toLocaleString("en-AU", { timeZone: "Australia/Sydney" });
+        const prefix = n.isFollowUp ? "[Follow-up] " : "";
+        return `${prefix}${dateStr}\n${n.content}`;
+      })
+      .join("\n\n---\n\n");
     return {
       "First Name": s.firstName,
       "Surname": s.lastName,
       "Student ID": s.studentId,
       "Email": s.email,
-      "Latest Note": s.notes[0]?.content ?? "",
+      "All Notes": allNotes,
       "Pathway Interest": derivePathwayInterest(data),
       "Follow-up": deriveFollowUp(data),
       "Follow-up Date": String(outcomes.followUpDate ?? ""),
