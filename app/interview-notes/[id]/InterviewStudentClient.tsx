@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, Send, Printer, Mail, RefreshCw, ChevronDown, ChevronRight as ChevronRightIcon, Trash2 } from "lucide-react";
-import { addInterviewNote, saveInterviewChecklist, deleteInterviewNote, addInterviewStudentToWE } from "@/lib/interviewActions";
+import { addInterviewNote, saveInterviewChecklist, deleteInterviewNote, addInterviewStudentToWE, removeInterviewStudentFromWE } from "@/lib/interviewActions";
 import { fmtDateTime, fmtDate } from "@/lib/dateFormat";
 
 type Note = { id: number; content: string; isFollowUp: boolean; createdAt: string };
@@ -326,7 +326,7 @@ function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
   );
 }
 
-function Tab4({ data, onChange, onWEPending }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; onWEPending: () => Promise<void> }) {
+function Tab4({ data, onChange, onWEPending, onWEUnpending }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; onWEPending: () => Promise<void>; onWEUnpending: () => Promise<boolean> }) {
   const refs = getObj(data, "referrals");
   function toggle(key: string, field: string) {
     const row = getObj(refs as Record<string, unknown>, key);
@@ -335,8 +335,15 @@ function Tab4({ data, onChange, onWEPending }: { data: Record<string, unknown>; 
   async function toggleWEPending() {
     const row = getObj(refs as Record<string, unknown>, "workExperience");
     const nowPending = !getBool(row, "pending");
-    onChange({ ...data, referrals: { ...refs, workExperience: { ...row, pending: nowPending } } });
-    if (nowPending) await onWEPending();
+    if (nowPending) {
+      onChange({ ...data, referrals: { ...refs, workExperience: { ...row, pending: true } } });
+      await onWEPending();
+    } else {
+      // Ask before removing
+      const remove = await onWEUnpending();
+      onChange({ ...data, referrals: { ...refs, workExperience: { ...row, pending: false } } });
+      // If they declined removal we still untick the checkbox but don't touch WE tab
+    }
   }
   function setNote(key: string, val: string) {
     const row = getObj(refs as Record<string, unknown>, key);
@@ -675,6 +682,14 @@ export function InterviewStudentClient({ student }: { student: Student }) {
     else toast.error(result.message);
   }
 
+  async function handleWEUnpending(): Promise<boolean> {
+    if (!confirm(`Remove ${student.firstName} ${student.lastName} from the Work Experience tab?`)) return false;
+    const result = await removeInterviewStudentFromWE(student.id);
+    if (result.ok) toast.success(result.message);
+    else toast.error(result.message);
+    return result.ok;
+  }
+
   async function handleDeleteNote(id: number) {
     await deleteInterviewNote(id, student.id);
     setNotes((prev) => prev.filter((n) => n.id !== id));
@@ -747,7 +762,7 @@ export function InterviewStudentClient({ student }: { student: Student }) {
             {activeTab === 2 && <Tab3 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 3 && <Tab7 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 4 && <Tab8 data={checklistData} onChange={setChecklistData} />}
-            {activeTab === 5 && <Tab4 data={checklistData} onChange={setChecklistData} onWEPending={handleWEPending} />}
+            {activeTab === 5 && <Tab4 data={checklistData} onChange={setChecklistData} onWEPending={handleWEPending} onWEUnpending={handleWEUnpending} />}
             {activeTab === 6 && <Tab5 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 7 && <Tab6 data={checklistData} onChange={setChecklistData} student={student} />}
           </div>

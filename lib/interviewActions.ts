@@ -3,43 +3,65 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
+async function findOrCreateWEStudent(firstName: string, lastName: string): Promise<number> {
+  // Try to find existing student by name
+  const existing = await prisma.student.findFirst({
+    where: {
+      firstName: { equals: firstName, mode: "insensitive" },
+      lastName: { equals: lastName, mode: "insensitive" },
+    },
+  });
+  if (existing) return existing.id;
+
+  // Auto-create as WE-only Year 10 student (won't appear on main student list)
+  const created = await prisma.student.create({
+    data: { firstName, lastName, year: 10, referrer: "Interview Referral", weOnly: true },
+  });
+  return created.id;
+}
+
 export async function addInterviewStudentToWE(interviewStudentId: number): Promise<{ ok: boolean; message: string }> {
   const is = await prisma.interviewStudent.findUnique({ where: { id: interviewStudentId } });
   if (!is) return { ok: false, message: "Interview student not found." };
 
-  // Match by first + last name (case-insensitive)
+  const studentId = await findOrCreateWEStudent(is.firstName, is.lastName);
+
+  // Avoid duplicates
+  const existing = await prisma.task.findFirst({ where: { studentId, category: "Work Experience" } });
+  if (existing) return { ok: true, message: `${is.firstName} ${is.lastName} is already on the Work Experience tab.` };
+
+  await prisma.task.create({
+    data: {
+      studentId,
+      title: "Work Experience",
+      category: "Work Experience",
+      status: "NOT_STARTED",
+      date: new Date().toISOString().split("T")[0],
+      weCompany: "", weContactName: "", weContactPhone: "", weContactEmail: "",
+      weStartDate: "", weEndDate: "",
+    },
+  });
+  await prisma.$executeRaw`UPDATE "Task" SET "weSortOrder" = NULL WHERE "studentId" = ${studentId} AND category = 'Work Experience'`;
+  revalidatePath("/work-experience");
+  return { ok: true, message: `${is.firstName} ${is.lastName} added to the Work Experience tab.` };
+}
+
+export async function removeInterviewStudentFromWE(interviewStudentId: number): Promise<{ ok: boolean; message: string }> {
+  const is = await prisma.interviewStudent.findUnique({ where: { id: interviewStudentId } });
+  if (!is) return { ok: false, message: "Interview student not found." };
+
   const student = await prisma.student.findFirst({
     where: {
       firstName: { equals: is.firstName, mode: "insensitive" },
       lastName: { equals: is.lastName, mode: "insensitive" },
     },
   });
-  if (!student) return { ok: false, message: `No student named "${is.firstName} ${is.lastName}" found in the main student list. Add them there first.` };
+  if (!student) return { ok: false, message: `${is.firstName} ${is.lastName} was not found in the student list.` };
 
-  // Avoid duplicates
-  const existing = await prisma.task.findFirst({
-    where: { studentId: student.id, category: "Work Experience" },
-  });
-  if (existing) return { ok: true, message: `${is.firstName} ${is.lastName} is already on the Work Experience tab.` };
-
-  await prisma.task.create({
-    data: {
-      studentId: student.id,
-      title: "Work Experience",
-      category: "Work Experience",
-      status: "NOT_STARTED",
-      date: new Date().toISOString().split("T")[0],
-      weCompany: "",
-      weContactName: "",
-      weContactPhone: "",
-      weContactEmail: "",
-      weStartDate: "",
-      weEndDate: "",
-    },
-  });
-  await prisma.$executeRaw`UPDATE "Task" SET "weSortOrder" = NULL WHERE "studentId" = ${student.id} AND category = 'Work Experience'`;
+  const deleted = await prisma.task.deleteMany({ where: { studentId: student.id, category: "Work Experience" } });
   revalidatePath("/work-experience");
-  return { ok: true, message: `${is.firstName} ${is.lastName} added to the Work Experience tab.` };
+  if (deleted.count === 0) return { ok: false, message: `${is.firstName} ${is.lastName} was not on the Work Experience tab.` };
+  return { ok: true, message: `${is.firstName} ${is.lastName} removed from the Work Experience tab.` };
 }
 
 export async function getInterviewStudents() {
