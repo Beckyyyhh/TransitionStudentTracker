@@ -41,10 +41,12 @@ export async function addInterviewNote(interviewStudentId: number, content: stri
 }
 
 export async function saveInterviewChecklist(interviewStudentId: number, data: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const jsonData = data as any;
   await prisma.interviewChecklist.upsert({
     where: { interviewStudentId },
-    create: { interviewStudentId, data },
-    update: { data },
+    create: { interviewStudentId, data: jsonData },
+    update: { data: jsonData },
   });
   revalidatePath(`/interview-notes/${interviewStudentId}`);
 }
