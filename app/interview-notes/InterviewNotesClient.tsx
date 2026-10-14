@@ -41,6 +41,15 @@ function deriveFollowUp(data: Record<string, unknown>): string {
   return outcomes?.followUpRequired ? "Yes" : "No";
 }
 
+function followUpDaysUntil(data: Record<string, unknown>): number | null {
+  const outcomes = (data.outcomes ?? {}) as Record<string, unknown>;
+  if (!outcomes.followUpRequired) return null;
+  const date = outcomes.followUpDate as string;
+  if (!date) return null;
+  const diff = Math.round((new Date(date).getTime() - Date.now()) / 86400000);
+  return diff >= 0 && diff <= 3 ? diff : null;
+}
+
 export function InterviewNotesClient({ students: initialStudents }: { students: Student[] }) {
   const [search, setSearch] = useState("");
   const [students, setStudents] = useState(initialStudents);
@@ -187,7 +196,18 @@ export function InterviewNotesClient({ students: initialStudents }: { students: 
                   onClick={() => router.push(`/interview-notes/${s.id}`)}
                 >
                   <td className="px-4 py-3 font-semibold" style={{ color: "#26215c" }}>
-                    {s.lastName}, {s.firstName}
+                    <span>{s.lastName}, {s.firstName}</span>
+                    {(() => {
+                      const days = followUpDaysUntil(s.checklistData);
+                      if (days === null) return null;
+                      const label = days === 0 ? "Follow-up today!" : days === 1 ? "Follow-up tomorrow" : `Follow-up in ${days} days`;
+                      return (
+                        <span className="ml-2 inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: "#fef3c7", color: "#92400e" }}>
+                          ⚠ {label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{s.studentId || "—"}</td>
                   <td className="px-4 py-3 text-gray-600">{s.email || "—"}</td>

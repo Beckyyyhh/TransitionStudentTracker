@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronLeft, Send, Printer, Mail } from "lucide-react";
+import { ChevronLeft, Send, Printer, Mail, RefreshCw } from "lucide-react";
 import { addInterviewNote, saveInterviewChecklist } from "@/lib/interviewActions";
-import { fmtDateTime } from "@/lib/dateFormat";
+import { fmtDateTime, fmtDate } from "@/lib/dateFormat";
 
 type Note = { id: number; content: string; isFollowUp: boolean; createdAt: string };
 
@@ -47,6 +47,10 @@ const PATHWAYS = [
   { key: "other", label: "Other", links: [] },
 ];
 const PATHWAY_OPTIONS = ["Not Aware", "Interested", "Not Interested", "Researched"];
+const PATHWAY_LABELS: Record<string, string> = {
+  university: "University", tafe: "TAFE/VET", apprenticeship: "Apprenticeship",
+  sbat: "SBAT", gapYear: "Gap Year", employment: "Employment", other: "Other",
+};
 
 const REFERRALS = [
   { key: "tafe", label: "TAFE referral" },
@@ -58,6 +62,24 @@ const REFERRALS = [
 
 const PRIORITIES = ["Low", "Medium", "High"];
 const STATUSES = ["Open", "In Progress", "Closed"];
+
+// Career Development rows
+const CAREER_DEV_ROWS = [
+  { key: "selfAwareness", label: "Self-awareness", options: ["Can identify strengths", "Can identify interests", "Needs support identifying strengths and interests"] },
+  { key: "careerExploration", label: "Career exploration", options: ["Has researched careers", "Needs help researching careers", "Has not started exploring careers"] },
+  { key: "workExperience", label: "Work experience", options: ["Completed", "Arranged", "Interested", "Needs assistance finding a placement"] },
+  { key: "resume", label: "Resume", options: ["Has a resume", "Needs to develop a resume", "Needs resume improvement"] },
+  { key: "employabilitySkills", label: "Employability skills", options: ["Can identify transferable skills", "Needs help identifying skills", "Discussed communication, teamwork or problem-solving"] },
+  { key: "extracurricular", label: "Extracurricular experience", options: ["Part-time employment", "Volunteering", "Sport", "Leadership", "Community involvement", "No experience discussed"] },
+  { key: "industryExposure", label: "Industry exposure", options: ["Career expo", "Industry visit", "Work experience", "Employer engagement", "Needs exposure to industries"] },
+];
+
+// Subject Selection rows
+const SUBJ_STATUS_OPTIONS = ["Confident with choices", "Has shortlisted subjects", "Undecided", "Needs individual subject selection support"];
+const PREREQ_OPTIONS = ["Understands prerequisites", "Needs to check prerequisites", "Unaware of prerequisites"];
+const RELEVANCE_OPTIONS = ["Understands links to career goals", "Needs guidance on subject relevance", "Choosing based on interest", "Choosing based on perceived scaling"];
+const ACADEMIC_OPTIONS = ["Current performance discussed", "Minimum entry requirements discussed", "Alternative subject combinations explored", "No concerns identified"];
+const SUPPORT_OPTIONS = ["Subject selection meeting", "Faculty consultation", "Academic planning", "Further research"];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +94,31 @@ function getStr(data: Record<string, unknown>, key: string, fallback = ""): stri
 }
 function getBool(data: Record<string, unknown>, key: string): boolean {
   return !!(data[key]);
+}
+
+function buildChecklistSummary(data: Record<string, unknown>): string {
+  const lines: string[] = [`📋 Consultation saved — ${new Date().toLocaleDateString("en-AU")}`];
+  const types = getArr(data, "consultationType");
+  if (types.length) lines.push(`Type: ${types.join(", ")}`);
+  const reasons = getArr(data, "mainReason");
+  if (reasons.length) lines.push(`Reason: ${reasons.join(", ")}`);
+  const freq = getStr(data, "frequency");
+  if (freq) lines.push(`Frequency: ${freq}`);
+  const awareness = getObj(data, "pathwayAwareness");
+  const interested = Object.entries(awareness)
+    .filter(([, v]) => v === "Interested" || v === "Researched")
+    .map(([k]) => PATHWAY_LABELS[k] ?? k);
+  if (interested.length) lines.push(`Pathway interest: ${interested.join(", ")}`);
+  const outcomes = getObj(data, "outcomes");
+  const mainOutcome = getStr(outcomes, "mainOutcome");
+  if (mainOutcome) lines.push(`Outcome: ${mainOutcome}`);
+  const nextSteps = getStr(outcomes, "nextSteps");
+  if (nextSteps) lines.push(`Next steps: ${nextSteps}`);
+  if (getBool(outcomes, "followUpRequired")) {
+    const d = getStr(outcomes, "followUpDate");
+    lines.push(`Follow-up required${d ? ` by ${fmtDate(d)}` : ""}`);
+  }
+  return lines.join("\n");
 }
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
@@ -239,29 +286,19 @@ function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <p className="text-sm font-semibold text-gray-700">{label}</p>
               {links.map((l) => (
-                <a
-                  key={l.url}
-                  href={l.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-semibold hover:underline"
-                  style={{ color: "#534ab7" }}
-                >
+                <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer"
+                  className="text-xs font-semibold hover:underline" style={{ color: "#534ab7" }}>
                   🔗 {l.label}
                 </a>
               ))}
             </div>
             <div className="flex flex-wrap gap-2 mb-2">
               {PATHWAY_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setOption(key, opt)}
+                <button key={opt} type="button" onClick={() => setOption(key, opt)}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
                   style={selected === opt
                     ? { backgroundColor: "#3d2c8d", color: "#fff", borderColor: "#3d2c8d" }
-                    : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}
-                >
+                    : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
                   {selected === opt ? "●" : "○"} {opt}
                 </button>
               ))}
@@ -271,7 +308,7 @@ function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
         );
       })}
       <p className="text-xs text-gray-400 px-1">
-        <strong>Pathway Interest</strong> column on the main list is derived from &ldquo;Interested&rdquo; or &ldquo;Researched&rdquo; rows.
+        <strong>Pathway Interest</strong> on the main list is derived from &ldquo;Interested&rdquo; or &ldquo;Researched&rdquo; rows.
       </p>
     </div>
   );
@@ -286,7 +323,6 @@ function Tab4({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
     const row = getObj(referrals as Record<string, unknown>, key);
     onChange({ ...data, referrals: { ...referrals, [key]: { ...row, [field]: !row[field] } } });
   }
-
   function setNote(key: string, val: string) {
     const row = getObj(referrals as Record<string, unknown>, key);
     onChange({ ...data, referrals: { ...referrals, [key]: { ...row, notes: val } } });
@@ -335,31 +371,18 @@ function Tab5({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
           ⚠ Follow-up is {daysUntil === 0 ? "today" : `in ${daysUntil} day${daysUntil === 1 ? "" : "s"}`}!
         </div>
       )}
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Main Outcome</label>
-        <textarea
-          rows={2}
-          value={getStr(outcomes, "mainOutcome")}
-          onChange={(e) => set("mainOutcome", e.target.value)}
-          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#d1d5db" }}
-          placeholder="Describe the main outcome of the consultation…"
-        />
+        <textarea rows={2} value={getStr(outcomes, "mainOutcome")} onChange={(e) => set("mainOutcome", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#d1d5db" }}
+          placeholder="Describe the main outcome of the consultation…" />
       </div>
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Next Steps</label>
-        <textarea
-          rows={2}
-          value={getStr(outcomes, "nextSteps")}
-          onChange={(e) => set("nextSteps", e.target.value)}
-          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#d1d5db" }}
-          placeholder="What happens next…"
-        />
+        <textarea rows={2} value={getStr(outcomes, "nextSteps")} onChange={(e) => set("nextSteps", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#d1d5db" }}
+          placeholder="What happens next…" />
       </div>
-
       <div className="flex flex-wrap gap-6">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Follow-up Required</label>
@@ -368,20 +391,13 @@ function Tab5({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             <RadioChip label="No" selected={!followUp} onChange={() => set("followUpRequired", false)} />
           </div>
         </div>
-
         {followUp && (
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Follow-up Date</label>
-            <input
-              type="date"
-              value={followUpDate}
-              onChange={(e) => set("followUpDate", e.target.value)}
-              className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
-              style={{ borderColor: "#d1d5db" }}
-            />
+            <input type="date" value={followUpDate} onChange={(e) => set("followUpDate", e.target.value)}
+              className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1" style={{ borderColor: "#d1d5db" }} />
           </div>
         )}
-
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Priority</label>
           <div className="flex gap-2">
@@ -390,7 +406,6 @@ function Tab5({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             ))}
           </div>
         </div>
-
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
           <div className="flex gap-2">
@@ -400,17 +415,11 @@ function Tab5({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
           </div>
         </div>
       </div>
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Additional Notes</label>
-        <textarea
-          rows={3}
-          value={getStr(outcomes, "additionalNotes")}
-          onChange={(e) => set("additionalNotes", e.target.value)}
-          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#d1d5db" }}
-          placeholder="Any additional observations or notes…"
-        />
+        <textarea rows={3} value={getStr(outcomes, "additionalNotes")} onChange={(e) => set("additionalNotes", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#d1d5db" }}
+          placeholder="Any additional observations or notes…" />
       </div>
     </div>
   );
@@ -422,9 +431,6 @@ function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onCh
   const plan = getObj(data, "actionPlan");
   const date = getStr(plan, "date", new Date().toISOString().slice(0, 10));
   const content = getStr(plan, "content");
-  const goal1 = getStr(plan, "goal1");
-  const goal2 = getStr(plan, "goal2");
-  const goal3 = getStr(plan, "goal3");
   const resources = getStr(plan, "resources");
   const deadline = getStr(plan, "deadline");
 
@@ -432,9 +438,7 @@ function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onCh
     onChange({ ...data, actionPlan: { ...plan, [key]: val } });
   }
 
-  function handlePrint() {
-    window.print();
-  }
+  function handlePrint() { window.print(); }
 
   function handleEmail() {
     const body = [
@@ -442,22 +446,19 @@ function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onCh
       `Date: ${date}`,
       ``,
       content ? `Overview:\n${content}` : "",
-      goal1 ? `Goal 1: ${goal1}` : "",
-      goal2 ? `Goal 2: ${goal2}` : "",
-      goal3 ? `Goal 3: ${goal3}` : "",
+      getStr(plan, "goal1") ? `Goal 1: ${getStr(plan, "goal1")}` : "",
+      getStr(plan, "goal2") ? `Goal 2: ${getStr(plan, "goal2")}` : "",
+      getStr(plan, "goal3") ? `Goal 3: ${getStr(plan, "goal3")}` : "",
       resources ? `Resources / Support:\n${resources}` : "",
       deadline ? `Target Completion: ${deadline}` : "",
       ``,
       `— Canley Vale HS Careers Hub`,
     ].filter(Boolean).join("\n");
-
-    const mailto = `mailto:${encodeURIComponent(student.email)}?subject=${encodeURIComponent(`Your Career Action Plan — Canley Vale HS`)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    window.location.href = `mailto:${encodeURIComponent(student.email)}?subject=${encodeURIComponent("Your Career Action Plan — Canley Vale HS")}&body=${encodeURIComponent(body)}`;
   }
 
   return (
     <div className="space-y-5 p-4">
-      {/* Print styles injected inline */}
       <style>{`
         @media print {
           body > * { display: none !important; }
@@ -465,20 +466,16 @@ function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onCh
         }
         .print-action-plan { display: none; }
       `}</style>
-
-      {/* Hidden print view */}
       <div className="print-action-plan">
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Career Action Plan</h1>
         <p style={{ fontSize: 14, marginBottom: 2 }}><strong>Student:</strong> {student.firstName} {student.lastName} {student.studentId ? `(${student.studentId})` : ""}</p>
         <p style={{ fontSize: 14, marginBottom: 16 }}><strong>Date:</strong> {date}</p>
         {content && <><p style={{ fontWeight: 700, marginBottom: 4 }}>Overview</p><p style={{ fontSize: 14, whiteSpace: "pre-wrap", marginBottom: 16 }}>{content}</p></>}
-        {(goal1 || goal2 || goal3) && (
-          <>
-            <p style={{ fontWeight: 700, marginBottom: 4 }}>Goals</p>
-            {goal1 && <p style={{ fontSize: 14, marginBottom: 4 }}>1. {goal1}</p>}
-            {goal2 && <p style={{ fontSize: 14, marginBottom: 4 }}>2. {goal2}</p>}
-            {goal3 && <p style={{ fontSize: 14, marginBottom: 4 }}>3. {goal3}</p>}
-          </>
+        {(getStr(plan, "goal1") || getStr(plan, "goal2") || getStr(plan, "goal3")) && (
+          <><p style={{ fontWeight: 700, marginBottom: 4 }}>Goals</p>
+            {getStr(plan, "goal1") && <p style={{ fontSize: 14, marginBottom: 4 }}>1. {getStr(plan, "goal1")}</p>}
+            {getStr(plan, "goal2") && <p style={{ fontSize: 14, marginBottom: 4 }}>2. {getStr(plan, "goal2")}</p>}
+            {getStr(plan, "goal3") && <p style={{ fontSize: 14, marginBottom: 4 }}>3. {getStr(plan, "goal3")}</p>}</>
         )}
         {resources && <><p style={{ fontWeight: 700, marginTop: 12, marginBottom: 4 }}>Resources / Support</p><p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{resources}</p></>}
         {deadline && <p style={{ fontSize: 14, marginTop: 12 }}><strong>Target Completion:</strong> {deadline}</p>}
@@ -488,97 +485,240 @@ function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onCh
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-sm font-bold text-gray-700">Action Plan</h3>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handlePrint}
+          <button type="button" onClick={handlePrint}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors hover:bg-gray-50"
-            style={{ color: "#374151", borderColor: "#d1d5db" }}
-          >
-            <Printer size={14} />
-            Print / Save PDF
+            style={{ color: "#374151", borderColor: "#d1d5db" }}>
+            <Printer size={14} /> Print / Save PDF
           </button>
-          <button
-            type="button"
-            onClick={handleEmail}
-            disabled={!student.email}
+          <button type="button" onClick={handleEmail} disabled={!student.email}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
             style={{ backgroundColor: "#534ab7" }}
-            title={student.email ? `Email to ${student.email}` : "No email address on file"}
-          >
-            <Mail size={14} />
-            Email to Student
+            title={student.email ? `Email to ${student.email}` : "No email address on file"}>
+            <Mail size={14} /> Email to Student
           </button>
         </div>
       </div>
-
       <div className="flex items-center gap-3">
         <label className="text-sm font-semibold text-gray-700 shrink-0">Plan Date</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => set("date", e.target.value)}
-          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
-          style={{ borderColor: "#d1d5db" }}
-        />
+        <input type="date" value={date} onChange={(e) => set("date", e.target.value)}
+          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1" style={{ borderColor: "#d1d5db" }} />
       </div>
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Overview / Summary</label>
-        <textarea
-          rows={3}
-          value={content}
-          onChange={(e) => set("content", e.target.value)}
-          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#d1d5db" }}
-          placeholder="Brief summary of the student's situation and what this plan aims to achieve…"
-        />
+        <textarea rows={3} value={content} onChange={(e) => set("content", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#d1d5db" }}
+          placeholder="Brief summary of the student's situation and what this plan aims to achieve…" />
       </div>
-
       <div className="space-y-3">
         <label className="block text-sm font-semibold text-gray-700">Goals / Action Steps</label>
-        {[["goal1", "Goal 1"], ["goal2", "Goal 2"], ["goal3", "Goal 3"]].map(([k, lbl]) => (
+        {(["goal1", "goal2", "goal3"] as const).map((k, i) => (
           <div key={k} className="flex items-start gap-2">
-            <span className="text-xs font-bold text-gray-400 mt-2.5 shrink-0 w-10">{lbl}</span>
-            <input
-              type="text"
-              value={getStr(plan, k)}
-              onChange={(e) => set(k, e.target.value)}
-              placeholder={`e.g. Research ${k === "goal1" ? "TAFE courses in hospitality" : k === "goal2" ? "Open Day dates" : "scholarship options"}…`}
-              className="flex-1 text-sm border rounded px-3 py-2 outline-none focus:ring-1"
-              style={{ borderColor: "#d1d5db" }}
-            />
+            <span className="text-xs font-bold text-gray-400 mt-2.5 shrink-0 w-10">Goal {i + 1}</span>
+            <input type="text" value={getStr(plan, k)} onChange={(e) => set(k, e.target.value)}
+              className="flex-1 text-sm border rounded px-3 py-2 outline-none focus:ring-1" style={{ borderColor: "#d1d5db" }}
+              placeholder="e.g. Research TAFE courses…" />
           </div>
         ))}
       </div>
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Resources / Support Available</label>
-        <textarea
-          rows={2}
-          value={resources}
-          onChange={(e) => set("resources", e.target.value)}
-          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#d1d5db" }}
-          placeholder="e.g. MyFuture website, TAFE NSW open days, school counsellor…"
-        />
+        <textarea rows={2} value={resources} onChange={(e) => set("resources", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#d1d5db" }}
+          placeholder="e.g. MyFuture website, TAFE NSW open days, school counsellor…" />
       </div>
-
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">Target Completion Date</label>
-        <input
-          type="date"
-          value={deadline}
-          onChange={(e) => set("deadline", e.target.value)}
-          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
-          style={{ borderColor: "#d1d5db" }}
-        />
+        <input type="date" value={deadline} onChange={(e) => set("deadline", e.target.value)}
+          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1" style={{ borderColor: "#d1d5db" }} />
       </div>
-
       {!student.email && (
         <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
           No email address on file — add one via the import spreadsheet to enable email sending.
         </p>
       )}
+    </div>
+  );
+}
+
+// ── Tab 7: Career Development & Employability Skills ─────────────────────────
+
+function Tab7({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const careerDev = getObj(data, "careerDev");
+  const careerDevNotes = getObj(data, "careerDevNotes");
+
+  function toggle(rowKey: string, opt: string) {
+    const row = getArr(careerDev as Record<string, unknown>, rowKey);
+    const next = row.includes(opt) ? row.filter((x) => x !== opt) : [...row, opt];
+    onChange({ ...data, careerDev: { ...careerDev, [rowKey]: next } });
+  }
+  function setNote(rowKey: string, val: string) {
+    onChange({ ...data, careerDevNotes: { ...careerDevNotes, [rowKey]: val } });
+  }
+
+  return (
+    <div className="space-y-4">
+      {CAREER_DEV_ROWS.map(({ key, label, options }) => {
+        const row = getArr(careerDev as Record<string, unknown>, key);
+        return (
+          <div key={key} className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+            <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {options.map((opt) => (
+                <button key={opt} type="button" onClick={() => toggle(key, opt)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                  style={row.includes(opt)
+                    ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                    : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+                  {row.includes(opt) ? "✓" : "○"} {opt}
+                </button>
+              ))}
+            </div>
+            <SectionNotes label={label} value={getStr(careerDevNotes as Record<string, unknown>, key)} onChange={(v) => setNote(key, v)} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Tab 8: Subject Selection & Academic Planning ──────────────────────────────
+
+function Tab8({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const subj = getObj(data, "subjectSelection");
+  const subjNotes = getObj(data, "subjectSelectionNotes");
+
+  function toggleArr(key: string, opt: string) {
+    const arr = getArr(subj as Record<string, unknown>, key);
+    const next = arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt];
+    onChange({ ...data, subjectSelection: { ...subj, [key]: next } });
+  }
+  function setRadio(key: string, opt: string) {
+    const cur = getStr(subj as Record<string, unknown>, key);
+    onChange({ ...data, subjectSelection: { ...subj, [key]: cur === opt ? "" : opt } });
+  }
+  function setText(key: string, val: string) {
+    onChange({ ...data, subjectSelection: { ...subj, [key]: val } });
+  }
+  function setNote(key: string, val: string) {
+    onChange({ ...data, subjectSelectionNotes: { ...subjNotes, [key]: val } });
+  }
+
+  const TEXT_FIELDS = [
+    { key: "subjectsOfInterest", label: "Subjects of interest" },
+    { key: "subjectsEnjoys", label: "Subjects the student enjoys" },
+    { key: "subjectsPerformsWell", label: "Subjects the student performs well in" },
+    { key: "subjectsChallenging", label: "Subjects the student finds challenging" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Status */}
+      <div className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Subject selection status</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {SUBJ_STATUS_OPTIONS.map((opt) => {
+            const arr = getArr(subj as Record<string, unknown>, "status");
+            return (
+              <button key={opt} type="button" onClick={() => toggleArr("status", opt)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={arr.includes(opt)
+                  ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                  : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+                {arr.includes(opt) ? "✓" : "○"} {opt}
+              </button>
+            );
+          })}
+        </div>
+        <SectionNotes label="Subject selection status" value={getStr(subjNotes as Record<string, unknown>, "status")} onChange={(v) => setNote("status", v)} />
+      </div>
+
+      {/* Text fields */}
+      {TEXT_FIELDS.map(({ key, label }) => (
+        <div key={key} className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
+          <input type="text" value={getStr(subj as Record<string, unknown>, key)}
+            onChange={(e) => setText(key, e.target.value)}
+            className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1" style={{ borderColor: "#d1d5db" }}
+            placeholder="Enter details…" />
+        </div>
+      ))}
+
+      {/* Prerequisites */}
+      <div className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Understanding of prerequisites</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {PREREQ_OPTIONS.map((opt) => (
+            <button key={opt} type="button" onClick={() => setRadio("prerequisites", opt)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+              style={getStr(subj as Record<string, unknown>, "prerequisites") === opt
+                ? { backgroundColor: "#3d2c8d", color: "#fff", borderColor: "#3d2c8d" }
+                : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+              {getStr(subj as Record<string, unknown>, "prerequisites") === opt ? "●" : "○"} {opt}
+            </button>
+          ))}
+        </div>
+        <SectionNotes label="Prerequisites" value={getStr(subjNotes as Record<string, unknown>, "prerequisites")} onChange={(v) => setNote("prerequisites", v)} />
+      </div>
+
+      {/* Subject relevance */}
+      <div className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Understanding of subject relevance</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {RELEVANCE_OPTIONS.map((opt) => {
+            const arr = getArr(subj as Record<string, unknown>, "relevance");
+            return (
+              <button key={opt} type="button" onClick={() => toggleArr("relevance", opt)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={arr.includes(opt)
+                  ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                  : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+                {arr.includes(opt) ? "✓" : "○"} {opt}
+              </button>
+            );
+          })}
+        </div>
+        <SectionNotes label="Subject relevance" value={getStr(subjNotes as Record<string, unknown>, "relevance")} onChange={(v) => setNote("relevance", v)} />
+      </div>
+
+      {/* Academic considerations */}
+      <div className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Academic considerations</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {ACADEMIC_OPTIONS.map((opt) => {
+            const arr = getArr(subj as Record<string, unknown>, "academic");
+            return (
+              <button key={opt} type="button" onClick={() => toggleArr("academic", opt)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={arr.includes(opt)
+                  ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                  : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+                {arr.includes(opt) ? "✓" : "○"} {opt}
+              </button>
+            );
+          })}
+        </div>
+        <SectionNotes label="Academic considerations" value={getStr(subjNotes as Record<string, unknown>, "academic")} onChange={(v) => setNote("academic", v)} />
+      </div>
+
+      {/* Additional support */}
+      <div className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+        <p className="text-sm font-semibold text-gray-700 mb-2">Additional support required</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {SUPPORT_OPTIONS.map((opt) => {
+            const arr = getArr(subj as Record<string, unknown>, "support");
+            return (
+              <button key={opt} type="button" onClick={() => toggleArr("support", opt)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={arr.includes(opt)
+                  ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                  : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}>
+                {arr.includes(opt) ? "✓" : "○"} {opt}
+              </button>
+            );
+          })}
+        </div>
+        <SectionNotes label="Additional support" value={getStr(subjNotes as Record<string, unknown>, "support")} onChange={(v) => setNote("support", v)} />
+      </div>
     </div>
   );
 }
@@ -592,18 +732,16 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
   const [followUp, setFollowUp] = useState(false);
   const router = useRouter();
 
+  // Allow parent to push new notes in (after save)
+  NotesPanel.push = (note: Note) => setNotes((prev) => [...prev, note]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     setSaving(true);
     try {
       await addInterviewNote(studentId, text.trim(), followUp);
-      const newNote: Note = {
-        id: Date.now(),
-        content: text.trim(),
-        isFollowUp: followUp,
-        createdAt: new Date().toISOString(),
-      };
+      const newNote: Note = { id: Date.now(), content: text.trim(), isFollowUp: followUp, createdAt: new Date().toISOString() };
       setNotes((prev) => [...prev, newNote]);
       setText("");
       setFollowUp(false);
@@ -616,74 +754,63 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
   return (
     <div className="space-y-3">
       <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-        {notes.length === 0 && (
-          <p className="text-xs text-gray-400 italic">No notes yet.</p>
-        )}
+        {notes.length === 0 && <p className="text-xs text-gray-400 italic">No notes yet. Saved consultations will appear here.</p>}
         {notes.map((n) => (
-          <div
-            key={n.id}
-            className="rounded-lg px-3 py-2 text-sm"
+          <div key={n.id} className="rounded-lg px-3 py-2 text-sm"
             style={n.isFollowUp
               ? { backgroundColor: "#fef3c7", border: "1px solid #fcd34d" }
-              : { backgroundColor: "#f5f4fe", border: "1px solid #eeedfe" }}
-          >
-            <p className="text-xs mb-1" style={{ color: n.isFollowUp ? "#92400e" : "#9ca3af" }}>
-              {n.isFollowUp ? "🔔 Follow-up · " : ""}{fmtDateTime(n.createdAt)}
+              : n.content.startsWith("📋")
+                ? { backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }
+                : { backgroundColor: "#f5f4fe", border: "1px solid #eeedfe" }}>
+            <p className="text-xs mb-1" style={{ color: n.isFollowUp ? "#92400e" : n.content.startsWith("📋") ? "#15803d" : "#9ca3af" }}>
+              {n.isFollowUp ? "🔔 Follow-up · " : n.content.startsWith("📋") ? "⚙ Auto-saved · " : ""}{fmtDateTime(n.createdAt)}
             </p>
             <p className="text-gray-800 whitespace-pre-wrap break-words">{n.content}</p>
           </div>
         ))}
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-2">
-        <textarea
-          rows={3}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Add a note or update…"
-          className="w-full text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 resize-none"
-          style={{ borderColor: "#afa9ec" }}
-        />
+        <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a note or update…"
+          className="w-full text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 resize-none" style={{ borderColor: "#afa9ec" }} />
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={followUp}
-              onChange={(e) => setFollowUp(e.target.checked)}
-              className="rounded"
-            />
+            <input type="checkbox" checked={followUp} onChange={(e) => setFollowUp(e.target.checked)} className="rounded" />
             Mark as follow-up session
           </label>
-          <button
-            type="submit"
-            disabled={saving || !text.trim()}
+          <button type="submit" disabled={saving || !text.trim()}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-colors"
-            style={{ backgroundColor: "#534ab7" }}
-          >
-            <Send size={13} />
-            {saving ? "Saving…" : "Add Note"}
+            style={{ backgroundColor: "#534ab7" }}>
+            <Send size={13} /> {saving ? "Saving…" : "Add Note"}
           </button>
         </div>
       </form>
     </div>
   );
 }
+// Allows external push
+NotesPanel.push = (_note: Note) => {};
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-const TAB_NAMES = ["Consultation", "Career Aspirations", "Pathway Awareness", "Referrals", "Outcomes", "Action Plan"];
+const TAB_NAMES = ["Consultation", "Career Aspirations", "Pathway Awareness", "Referrals", "Outcomes", "Action Plan", "Career Dev.", "Subject Selection"];
 
 export function InterviewStudentClient({ student }: { student: Student }) {
   const [activeTab, setActiveTab] = useState(0);
   const [checklistData, setChecklistData] = useState(student.checklistData);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState(student.notes);
   const router = useRouter();
 
   async function handleSaveChecklist() {
     setSaving(true);
     try {
       await saveInterviewChecklist(student.id, checklistData);
-      toast.success("Checklist saved");
+      // Auto-create a summary note
+      const summary = buildChecklistSummary(checklistData);
+      await addInterviewNote(student.id, summary, false);
+      const autoNote: Note = { id: Date.now(), content: summary, isFollowUp: false, createdAt: new Date().toISOString() };
+      setNotes((prev) => [...prev, autoNote]);
+      toast.success("Saved — summary added to notes");
       router.refresh();
     } catch {
       toast.error("Failed to save");
@@ -692,20 +819,39 @@ export function InterviewStudentClient({ student }: { student: Student }) {
     }
   }
 
+  async function handleFollowUp() {
+    if (!confirm("Start a new follow-up session? This will clear the Consultation and Outcomes tabs so you can record the new session. All other data and notes are kept.")) return;
+    const cleared = {
+      ...checklistData,
+      consultationType: [],
+      mainReason: [],
+      frequency: "",
+      tab1Notes: {},
+      outcomes: {},
+    };
+    setChecklistData(cleared);
+    setSaving(true);
+    try {
+      await saveInterviewChecklist(student.id, cleared);
+      const followUpNote = `🔔 Follow-up session started — ${new Date().toLocaleDateString("en-AU")}\nConsultation and Outcomes tabs cleared for new entry.`;
+      await addInterviewNote(student.id, followUpNote, true);
+      const newNote: Note = { id: Date.now(), content: followUpNote, isFollowUp: true, createdAt: new Date().toISOString() };
+      setNotes((prev) => [...prev, newNote]);
+      setActiveTab(0);
+      toast.success("Ready for follow-up interview");
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto py-6">
       <div className="mb-6">
-        <a
-          href="/interview-notes"
-          className="inline-flex items-center gap-1 text-sm font-semibold mb-3 hover:underline"
-          style={{ color: "#534ab7" }}
-        >
+        <a href="/interview-notes" className="inline-flex items-center gap-1 text-sm font-semibold mb-3 hover:underline" style={{ color: "#534ab7" }}>
           <ChevronLeft size={16} /> Year 10 Interview Notes
         </a>
-        <h1
-          className="text-2xl font-extrabold"
-          style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}
-        >
+        <h1 className="text-2xl font-extrabold" style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}>
           {student.lastName}, {student.firstName}
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">
@@ -715,18 +861,15 @@ export function InterviewStudentClient({ student }: { student: Student }) {
       </div>
 
       <div className="flex flex-col gap-6">
-        {/* Checklist tabs — full width */}
+        {/* Checklist tabs */}
         <div className="w-full rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
           <div className="flex border-b overflow-x-auto" style={{ borderColor: "#afa9ec", backgroundColor: "#f5f4fe" }}>
             {TAB_NAMES.map((name, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveTab(i)}
+              <button key={i} onClick={() => setActiveTab(i)}
                 className="px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors shrink-0"
                 style={activeTab === i
                   ? { color: "#26215c", borderBottom: "2px solid #3d2c8d", backgroundColor: "#fff" }
-                  : { color: "#6b7280" }}
-              >
+                  : { color: "#6b7280" }}>
                 {name}
               </button>
             ))}
@@ -739,27 +882,34 @@ export function InterviewStudentClient({ student }: { student: Student }) {
             {activeTab === 3 && <Tab4 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 4 && <Tab5 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 5 && <Tab6 data={checklistData} onChange={setChecklistData} student={student} />}
+            {activeTab === 6 && <Tab7 data={checklistData} onChange={setChecklistData} />}
+            {activeTab === 7 && <Tab8 data={checklistData} onChange={setChecklistData} />}
           </div>
 
-          <div className="px-4 py-3 border-t flex justify-end" style={{ borderColor: "#eeedfe" }}>
-            <button
-              onClick={handleSaveChecklist}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: "#3d2c8d" }}
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
+          <div className="px-4 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: "#eeedfe" }}>
+            <p className="text-xs text-gray-400">Saving creates a summary entry in Notes &amp; Updates below.</p>
+            <div className="flex gap-2">
+              <button onClick={handleFollowUp} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border disabled:opacity-50 transition-colors hover:bg-amber-50"
+                style={{ color: "#92400e", borderColor: "#fcd34d" }}>
+                <RefreshCw size={13} /> Follow-up
+              </button>
+              <button onClick={handleSaveChecklist} disabled={saving}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-colors"
+                style={{ backgroundColor: "#3d2c8d" }}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Notes — below checklist, full width */}
+        {/* Notes panel below */}
         <div className="w-full rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
           <div className="px-4 py-3 font-extrabold text-sm" style={{ backgroundColor: "#3d2c8d", color: "#fff", fontFamily: "var(--font-nunito), sans-serif" }}>
-            Notes & Updates
+            Notes &amp; Updates
           </div>
           <div className="bg-white p-4">
-            <NotesPanel studentId={student.id} initialNotes={student.notes} />
+            <NotesPanel studentId={student.id} initialNotes={notes} />
           </div>
         </div>
       </div>
