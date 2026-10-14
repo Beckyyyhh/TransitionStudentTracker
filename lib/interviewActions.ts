@@ -50,6 +50,7 @@ export async function saveInterviewChecklist(interviewStudentId: number, data: R
     update: { data: jsonData },
   });
   revalidatePath(`/interview-notes/${interviewStudentId}`);
+  revalidatePath("/interview-notes");
 }
 
 export async function deleteInterviewNote(id: number, interviewStudentId: number) {
