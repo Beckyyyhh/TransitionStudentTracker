@@ -601,8 +601,8 @@ function NotesPanel({
     if (!text.trim()) return;
     setSaving(true);
     try {
-      await addInterviewNote(studentId, text.trim(), followUp);
-      onNewNote({ id: Date.now(), content: text.trim(), isFollowUp: followUp, createdAt: new Date().toISOString() });
+      const saved = await addInterviewNote(studentId, text.trim(), followUp);
+      onNewNote({ id: saved.id, content: saved.content, isFollowUp: saved.isFollowUp, createdAt: saved.createdAt.toISOString() });
       setText("");
       setFollowUp(false);
       router.refresh();
@@ -671,8 +671,8 @@ export function InterviewStudentClient({ student }: { student: Student }) {
     try {
       await saveInterviewChecklist(student.id, checklistData);
       const summary = buildFullSummary(checklistData, student.id);
-      await addInterviewNote(student.id, summary, false);
-      pushNote({ id: Date.now(), content: summary, isFollowUp: false, createdAt: new Date().toISOString() });
+      const saved = await addInterviewNote(student.id, summary, false);
+      pushNote({ id: saved.id, content: saved.content, isFollowUp: saved.isFollowUp, createdAt: saved.createdAt.toISOString() });
       toast.success("Saved — summary added to notes");
       router.refresh();
     } catch {
@@ -690,8 +690,8 @@ export function InterviewStudentClient({ student }: { student: Student }) {
     try {
       await saveInterviewChecklist(student.id, cleared);
       const msg = `🔔 Follow-up session started — ${new Date().toLocaleDateString("en-AU")}\nConsultation and Outcomes tabs cleared for new entry.`;
-      await addInterviewNote(student.id, msg, true);
-      pushNote({ id: Date.now(), content: msg, isFollowUp: true, createdAt: new Date().toISOString() });
+      const saved = await addInterviewNote(student.id, msg, true);
+      pushNote({ id: saved.id, content: saved.content, isFollowUp: saved.isFollowUp, createdAt: saved.createdAt.toISOString() });
       setActiveTab(0);
       toast.success("Ready for follow-up interview");
       router.refresh();

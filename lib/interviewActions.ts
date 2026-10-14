@@ -36,8 +36,9 @@ export async function clearAllInterviewStudents() {
 }
 
 export async function addInterviewNote(interviewStudentId: number, content: string, isFollowUp = false) {
-  await prisma.interviewNote.create({ data: { interviewStudentId, content, isFollowUp } });
+  const note = await prisma.interviewNote.create({ data: { interviewStudentId, content, isFollowUp } });
   revalidatePath(`/interview-notes/${interviewStudentId}`);
+  return note;
 }
 
 export async function saveInterviewChecklist(interviewStudentId: number, data: Record<string, unknown>) {
