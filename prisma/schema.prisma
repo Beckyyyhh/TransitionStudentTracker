@@ -81,3 +81,33 @@ model TaskAttachment {
   mimeType  String
   createdAt DateTime @default(now())
 }
+
+model InterviewStudent {
+  id         Int      @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  studentId  String   @default("")
+  email      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  notes      InterviewNote[]
+  checklist  InterviewChecklist?
+}
+
+model InterviewNote {
+  id                 Int              @id @default(autoincrement())
+  interviewStudentId Int
+  student            InterviewStudent @relation(fields: [interviewStudentId], references: [id], onDelete: Cascade)
+  content            String
+  isFollowUp         Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+}
+
+model InterviewChecklist {
+  id                 Int              @id @default(autoincrement())
+  interviewStudentId Int              @unique
+  student            InterviewStudent @relation(fields: [interviewStudentId], references: [id], onDelete: Cascade)
+  data               Json             @default("{}")
+  updatedAt          DateTime         @updatedAt
+}

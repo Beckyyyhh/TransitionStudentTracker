@@ -8,6 +8,7 @@ const tabs = [
   { href: "/students", label: "Students" },
   { href: "/tasks", label: "Tasks" },
   { href: "/work-experience", label: "Work Experience" },
+  { href: "/interview-notes", label: "Yr 10 Interviews" },
   { href: "/history", label: "History" },
   { href: "/dashboard", label: "Dashboard" },
 ];
