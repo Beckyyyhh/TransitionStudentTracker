@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Search, Upload, Download, Trash2, ChevronRight } from "lucide-react";
@@ -44,6 +44,10 @@ function deriveFollowUp(data: Record<string, unknown>): string {
 export function InterviewNotesClient({ students: initialStudents }: { students: Student[] }) {
   const [search, setSearch] = useState("");
   const [students, setStudents] = useState(initialStudents);
+
+  useEffect(() => {
+    setStudents(initialStudents);
+  }, [initialStudents]);
   const [importing, setImporting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
