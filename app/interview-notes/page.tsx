@@ -29,11 +29,14 @@ export default async function InterviewNotesPage() {
   return (
     <div>
       <h1
-        className="text-2xl font-extrabold mb-4"
+        className="text-2xl font-extrabold mb-2"
         style={{ color: "#26215c", fontFamily: "var(--font-nunito), sans-serif" }}
       >
         Year 10 Interview Notes
       </h1>
+      <p className="text-sm text-gray-600 mb-4 max-w-3xl">
+        This service has been communicated and reinforced through year meetings every term. The service is to help students access relevant opportunities that suit their needs and interests — for example, TVET.
+      </p>
       <div
         className="rounded-xl overflow-hidden"
         style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}
