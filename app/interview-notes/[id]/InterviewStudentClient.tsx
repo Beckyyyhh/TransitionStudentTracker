@@ -38,13 +38,13 @@ const CAREER_ASPIRATIONS = [
 const ASPIRATION_OPTIONS = ["Discussed", "Action Set", "Resources Provided", "Follow-up Needed"];
 
 const PATHWAYS = [
-  { key: "university", label: "University / ATAR" },
-  { key: "tafe", label: "TAFE / VET" },
-  { key: "apprenticeship", label: "Apprenticeship / Traineeship" },
-  { key: "sbat", label: "School-Based Apprenticeship (SBAT)" },
-  { key: "gapYear", label: "Gap Year" },
-  { key: "employment", label: "Direct Employment" },
-  { key: "other", label: "Other" },
+  { key: "university", label: "University / ATAR", links: [{ label: "UAC Course Search", url: "https://uac.edu.au/course-search/search/find-a-course-undergraduate" }] },
+  { key: "tafe", label: "TAFE / VET", links: [{ label: "TAFE NSW", url: "https://www.tafensw.edu.au/" }] },
+  { key: "apprenticeship", label: "Apprenticeship / Traineeship", links: [{ label: "Types of Apprenticeships", url: "https://www.apprenticeships.gov.au/about-apprenticeships/types-apprenticeships" }, { label: "How to Find an Apprenticeship", url: "https://www.apprenticeships.gov.au/apprentices/how-find-and-prepare-apprenticeship" }] },
+  { key: "sbat", label: "School-Based Apprenticeship (SBAT)", links: [] },
+  { key: "gapYear", label: "Gap Year", links: [] },
+  { key: "employment", label: "Direct Employment", links: [] },
+  { key: "other", label: "Other", links: [] },
 ];
 const PATHWAY_OPTIONS = ["Not Aware", "Interested", "Not Interested", "Researched"];
 
@@ -232,11 +232,25 @@ function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
 
   return (
     <div className="space-y-4">
-      {PATHWAYS.map(({ key, label }) => {
+      {PATHWAYS.map(({ key, label, links }) => {
         const selected = getStr(awareness as Record<string, unknown>, key);
         return (
           <div key={key} className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
-            <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <p className="text-sm font-semibold text-gray-700">{label}</p>
+              {links.map((l) => (
+                <a
+                  key={l.url}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: "#534ab7" }}
+                >
+                  🔗 {l.label}
+                </a>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-2 mb-2">
               {PATHWAY_OPTIONS.map((opt) => (
                 <button
