@@ -31,7 +31,6 @@ const FREQUENCIES = ["First Visit", "Second Visit", "Third Visit", "Four or More
 const CAREER_ASPIRATIONS = [
   { key: "careerGoals", label: "Career goals discussed" },
   { key: "subjectAlignment", label: "Subject selection alignment" },
-  { key: "workExperience", label: "Work experience interest" },
   { key: "extracurricular", label: "Extracurricular / hobby interests" },
   { key: "longTermGoals", label: "Long-term goals" },
 ];
