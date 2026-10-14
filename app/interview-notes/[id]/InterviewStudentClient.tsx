@@ -56,7 +56,6 @@ const REFERRALS = [
   { key: "tafe", label: "TAFE referral" },
   { key: "university", label: "University Open Day" },
   { key: "workExperience", label: "Work Experience" },
-  { key: "externalCareers", label: "External Careers Advisor" },
   { key: "wellbeing", label: "Student Services / Wellbeing" },
 ];
 
