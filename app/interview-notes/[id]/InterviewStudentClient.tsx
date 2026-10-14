@@ -601,7 +601,7 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
 
   return (
     <div className="space-y-3">
-      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
         {notes.length === 0 && (
           <p className="text-xs text-gray-400 italic">No notes yet.</p>
         )}
@@ -700,9 +700,9 @@ export function InterviewStudentClient({ student }: { student: Student }) {
         </p>
       </div>
 
-      <div className="flex gap-6 flex-col lg:flex-row">
-        {/* Left: Checklist tabs */}
-        <div className="flex-1 min-w-0 rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
+      <div className="flex flex-col gap-6">
+        {/* Checklist tabs — full width */}
+        <div className="w-full rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
           <div className="flex border-b overflow-x-auto" style={{ borderColor: "#afa9ec", backgroundColor: "#f5f4fe" }}>
             {TAB_NAMES.map((name, i) => (
               <button
@@ -739,8 +739,8 @@ export function InterviewStudentClient({ student }: { student: Student }) {
           </div>
         </div>
 
-        {/* Right: Notes */}
-        <div className="w-full lg:w-96 rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
+        {/* Notes — below checklist, full width */}
+        <div className="w-full rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
           <div className="px-4 py-3 font-extrabold text-sm" style={{ backgroundColor: "#3d2c8d", color: "#fff", fontFamily: "var(--font-nunito), sans-serif" }}>
             Notes & Updates
           </div>
