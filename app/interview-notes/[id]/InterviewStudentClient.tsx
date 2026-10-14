@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronLeft, Plus, Send } from "lucide-react";
+import { ChevronLeft, Send, Printer, Mail } from "lucide-react";
 import { addInterviewNote, saveInterviewChecklist } from "@/lib/interviewActions";
 import { fmtDateTime } from "@/lib/dateFormat";
 
@@ -74,7 +74,23 @@ function getBool(data: Record<string, unknown>, key: string): boolean {
   return !!(data[key]);
 }
 
-// ── Components ───────────────────────────────────────────────────────────────
+// ── Shared UI ─────────────────────────────────────────────────────────────────
+
+function SectionNotes({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="mt-3">
+      <label className="block text-xs font-semibold text-gray-400 mb-1">Notes — {label}</label>
+      <textarea
+        rows={2}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Optional notes…"
+        className="w-full text-sm border rounded-lg px-3 py-2 outline-none focus:ring-1 resize-none bg-gray-50"
+        style={{ borderColor: "#e5e7eb" }}
+      />
+    </div>
+  );
+}
 
 function CheckboxChip({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -112,10 +128,14 @@ function Tab1({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
   const types = getArr(data, "consultationType");
   const reasons = getArr(data, "mainReason");
   const freq = getStr(data, "frequency");
+  const tab1Notes = getObj(data, "tab1Notes");
 
   function toggleArr(key: string, arr: string[], val: string) {
     const next = arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
     onChange({ ...data, [key]: next });
+  }
+  function setNote(key: string, val: string) {
+    onChange({ ...data, tab1Notes: { ...tab1Notes, [key]: val } });
   }
 
   return (
@@ -127,6 +147,7 @@ function Tab1({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             <CheckboxChip key={t} label={t} checked={types.includes(t)} onChange={() => toggleArr("consultationType", types, t)} />
           ))}
         </div>
+        <SectionNotes label="Consultation Type" value={getStr(tab1Notes, "consultationType")} onChange={(v) => setNote("consultationType", v)} />
       </div>
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2">Main Reason for Visit</h3>
@@ -135,6 +156,7 @@ function Tab1({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             <CheckboxChip key={r} label={r} checked={reasons.includes(r)} onChange={() => toggleArr("mainReason", reasons, r)} />
           ))}
         </div>
+        <SectionNotes label="Main Reason" value={getStr(tab1Notes, "mainReason")} onChange={(v) => setNote("mainReason", v)} />
       </div>
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2">Consultation Frequency</h3>
@@ -143,6 +165,7 @@ function Tab1({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
             <RadioChip key={f} label={f} selected={freq === f} onChange={() => onChange({ ...data, frequency: f })} />
           ))}
         </div>
+        <SectionNotes label="Frequency" value={getStr(tab1Notes, "frequency")} onChange={(v) => setNote("frequency", v)} />
       </div>
     </div>
   );
@@ -152,49 +175,43 @@ function Tab1({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
 
 function Tab2({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const aspirations = getObj(data, "careerAspirations");
+  const aspirationNotes = getObj(data, "aspirationNotes");
 
   function toggleOption(rowKey: string, opt: string) {
     const row = getArr(aspirations as Record<string, unknown>, rowKey);
     const next = row.includes(opt) ? row.filter((x) => x !== opt) : [...row, opt];
     onChange({ ...data, careerAspirations: { ...aspirations, [rowKey]: next } });
   }
+  function setNote(rowKey: string, val: string) {
+    onChange({ ...data, aspirationNotes: { ...aspirationNotes, [rowKey]: val } });
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b" style={{ borderColor: "#eeedfe" }}>
-            <th className="px-4 py-3 text-left font-semibold text-gray-600 min-w-[200px]">Area</th>
-            {ASPIRATION_OPTIONS.map((o) => (
-              <th key={o} className="px-4 py-3 text-center font-semibold text-gray-600 whitespace-nowrap">{o}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {CAREER_ASPIRATIONS.map(({ key, label }) => {
-            const row = getArr(aspirations as Record<string, unknown>, key);
-            return (
-              <tr key={key} className="border-b hover:bg-purple-50/20" style={{ borderColor: "#eeedfe" }}>
-                <td className="px-4 py-3 text-gray-700">{label}</td>
-                {ASPIRATION_OPTIONS.map((opt) => (
-                  <td key={opt} className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => toggleOption(key, opt)}
-                      className="w-5 h-5 rounded border-2 transition-all inline-flex items-center justify-center"
-                      style={row.includes(opt)
-                        ? { backgroundColor: "#534ab7", borderColor: "#534ab7" }
-                        : { borderColor: "#d1d5db" }}
-                    >
-                      {row.includes(opt) && <span className="text-white text-xs font-bold">✓</span>}
-                    </button>
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      {CAREER_ASPIRATIONS.map(({ key, label }) => {
+        const row = getArr(aspirations as Record<string, unknown>, key);
+        return (
+          <div key={key} className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+            <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {ASPIRATION_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => toggleOption(key, opt)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                  style={row.includes(opt)
+                    ? { backgroundColor: "#534ab7", color: "#fff", borderColor: "#534ab7" }
+                    : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}
+                >
+                  {row.includes(opt) ? "✓" : "○"} {opt}
+                </button>
+              ))}
+            </div>
+            <SectionNotes label={label} value={getStr(aspirationNotes as Record<string, unknown>, key)} onChange={(v) => setNote(key, v)} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -203,49 +220,43 @@ function Tab2({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
 
 function Tab3({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const awareness = getObj(data, "pathwayAwareness");
+  const pathwayNotes = getObj(data, "pathwayNotes");
 
   function setOption(rowKey: string, opt: string) {
     const current = getStr(awareness as Record<string, unknown>, rowKey);
     onChange({ ...data, pathwayAwareness: { ...awareness, [rowKey]: current === opt ? "" : opt } });
   }
+  function setNote(rowKey: string, val: string) {
+    onChange({ ...data, pathwayNotes: { ...pathwayNotes, [rowKey]: val } });
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b" style={{ borderColor: "#eeedfe" }}>
-            <th className="px-4 py-3 text-left font-semibold text-gray-600 min-w-[200px]">Pathway</th>
-            {PATHWAY_OPTIONS.map((o) => (
-              <th key={o} className="px-4 py-3 text-center font-semibold text-gray-600 whitespace-nowrap">{o}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {PATHWAYS.map(({ key, label }) => {
-            const selected = getStr(awareness as Record<string, unknown>, key);
-            return (
-              <tr key={key} className="border-b hover:bg-purple-50/20" style={{ borderColor: "#eeedfe" }}>
-                <td className="px-4 py-3 text-gray-700">{label}</td>
-                {PATHWAY_OPTIONS.map((opt) => (
-                  <td key={opt} className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setOption(key, opt)}
-                      className="w-5 h-5 rounded-full border-2 transition-all inline-flex items-center justify-center"
-                      style={selected === opt
-                        ? { backgroundColor: "#3d2c8d", borderColor: "#3d2c8d" }
-                        : { borderColor: "#d1d5db" }}
-                    >
-                      {selected === opt && <span className="w-2 h-2 rounded-full bg-white inline-block" />}
-                    </button>
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <p className="px-4 py-2 text-xs text-gray-400 bg-purple-50/40">
+    <div className="space-y-4">
+      {PATHWAYS.map(({ key, label }) => {
+        const selected = getStr(awareness as Record<string, unknown>, key);
+        return (
+          <div key={key} className="border rounded-lg p-3" style={{ borderColor: "#eeedfe" }}>
+            <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {PATHWAY_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setOption(key, opt)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                  style={selected === opt
+                    ? { backgroundColor: "#3d2c8d", color: "#fff", borderColor: "#3d2c8d" }
+                    : { backgroundColor: "#fff", color: "#6b7280", borderColor: "#d1d5db" }}
+                >
+                  {selected === opt ? "●" : "○"} {opt}
+                </button>
+              ))}
+            </div>
+            <SectionNotes label={label} value={getStr(pathwayNotes as Record<string, unknown>, key)} onChange={(v) => setNote(key, v)} />
+          </div>
+        );
+      })}
+      <p className="text-xs text-gray-400 px-1">
         <strong>Pathway Interest</strong> column on the main list is derived from &ldquo;Interested&rdquo; or &ldquo;Researched&rdquo; rows.
       </p>
     </div>
@@ -279,14 +290,7 @@ function Tab4({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
               <CheckboxChip label="Pending" checked={getBool(row, "pending")} onChange={() => toggle(key, "pending")} />
               <CheckboxChip label="Completed" checked={getBool(row, "completed")} onChange={() => toggle(key, "completed")} />
             </div>
-            <input
-              type="text"
-              placeholder="Notes / outcome…"
-              value={getStr(row, "notes")}
-              onChange={(e) => setNote(key, e.target.value)}
-              className="w-full text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
-              style={{ borderColor: "#d1d5db" }}
-            />
+            <SectionNotes label={label} value={getStr(row, "notes")} onChange={(v) => setNote(key, v)} />
           </div>
         );
       })}
@@ -382,6 +386,185 @@ function Tab5({ data, onChange }: { data: Record<string, unknown>; onChange: (d:
           </div>
         </div>
       </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">Additional Notes</label>
+        <textarea
+          rows={3}
+          value={getStr(outcomes, "additionalNotes")}
+          onChange={(e) => set("additionalNotes", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
+          style={{ borderColor: "#d1d5db" }}
+          placeholder="Any additional observations or notes…"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 6: Action Plan ────────────────────────────────────────────────────────
+
+function Tab6({ data, onChange, student }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; student: Student }) {
+  const plan = getObj(data, "actionPlan");
+  const date = getStr(plan, "date", new Date().toISOString().slice(0, 10));
+  const content = getStr(plan, "content");
+  const goal1 = getStr(plan, "goal1");
+  const goal2 = getStr(plan, "goal2");
+  const goal3 = getStr(plan, "goal3");
+  const resources = getStr(plan, "resources");
+  const deadline = getStr(plan, "deadline");
+
+  function set(key: string, val: string) {
+    onChange({ ...data, actionPlan: { ...plan, [key]: val } });
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  function handleEmail() {
+    const body = [
+      `Action Plan — ${student.firstName} ${student.lastName}`,
+      `Date: ${date}`,
+      ``,
+      content ? `Overview:\n${content}` : "",
+      goal1 ? `Goal 1: ${goal1}` : "",
+      goal2 ? `Goal 2: ${goal2}` : "",
+      goal3 ? `Goal 3: ${goal3}` : "",
+      resources ? `Resources / Support:\n${resources}` : "",
+      deadline ? `Target Completion: ${deadline}` : "",
+      ``,
+      `— Canley Vale HS Careers Hub`,
+    ].filter(Boolean).join("\n");
+
+    const mailto = `mailto:${encodeURIComponent(student.email)}?subject=${encodeURIComponent(`Your Career Action Plan — Canley Vale HS`)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
+  return (
+    <div className="space-y-5 p-4">
+      {/* Print styles injected inline */}
+      <style>{`
+        @media print {
+          body > * { display: none !important; }
+          .print-action-plan { display: block !important; position: fixed; top: 0; left: 0; width: 100%; background: white; z-index: 99999; padding: 40px; }
+        }
+        .print-action-plan { display: none; }
+      `}</style>
+
+      {/* Hidden print view */}
+      <div className="print-action-plan">
+        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Career Action Plan</h1>
+        <p style={{ fontSize: 14, marginBottom: 2 }}><strong>Student:</strong> {student.firstName} {student.lastName} {student.studentId ? `(${student.studentId})` : ""}</p>
+        <p style={{ fontSize: 14, marginBottom: 16 }}><strong>Date:</strong> {date}</p>
+        {content && <><p style={{ fontWeight: 700, marginBottom: 4 }}>Overview</p><p style={{ fontSize: 14, whiteSpace: "pre-wrap", marginBottom: 16 }}>{content}</p></>}
+        {(goal1 || goal2 || goal3) && (
+          <>
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>Goals</p>
+            {goal1 && <p style={{ fontSize: 14, marginBottom: 4 }}>1. {goal1}</p>}
+            {goal2 && <p style={{ fontSize: 14, marginBottom: 4 }}>2. {goal2}</p>}
+            {goal3 && <p style={{ fontSize: 14, marginBottom: 4 }}>3. {goal3}</p>}
+          </>
+        )}
+        {resources && <><p style={{ fontWeight: 700, marginTop: 12, marginBottom: 4 }}>Resources / Support</p><p style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{resources}</p></>}
+        {deadline && <p style={{ fontSize: 14, marginTop: 12 }}><strong>Target Completion:</strong> {deadline}</p>}
+        <p style={{ fontSize: 12, marginTop: 32, color: "#6b7280" }}>Canley Vale HS — Careers Hub</p>
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h3 className="text-sm font-bold text-gray-700">Action Plan</h3>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors hover:bg-gray-50"
+            style={{ color: "#374151", borderColor: "#d1d5db" }}
+          >
+            <Printer size={14} />
+            Print / Save PDF
+          </button>
+          <button
+            type="button"
+            onClick={handleEmail}
+            disabled={!student.email}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
+            style={{ backgroundColor: "#534ab7" }}
+            title={student.email ? `Email to ${student.email}` : "No email address on file"}
+          >
+            <Mail size={14} />
+            Email to Student
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-semibold text-gray-700 shrink-0">Plan Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => set("date", e.target.value)}
+          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
+          style={{ borderColor: "#d1d5db" }}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">Overview / Summary</label>
+        <textarea
+          rows={3}
+          value={content}
+          onChange={(e) => set("content", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
+          style={{ borderColor: "#d1d5db" }}
+          placeholder="Brief summary of the student's situation and what this plan aims to achieve…"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="block text-sm font-semibold text-gray-700">Goals / Action Steps</label>
+        {[["goal1", "Goal 1"], ["goal2", "Goal 2"], ["goal3", "Goal 3"]].map(([k, lbl]) => (
+          <div key={k} className="flex items-start gap-2">
+            <span className="text-xs font-bold text-gray-400 mt-2.5 shrink-0 w-10">{lbl}</span>
+            <input
+              type="text"
+              value={getStr(plan, k)}
+              onChange={(e) => set(k, e.target.value)}
+              placeholder={`e.g. Research ${k === "goal1" ? "TAFE courses in hospitality" : k === "goal2" ? "Open Day dates" : "scholarship options"}…`}
+              className="flex-1 text-sm border rounded px-3 py-2 outline-none focus:ring-1"
+              style={{ borderColor: "#d1d5db" }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">Resources / Support Available</label>
+        <textarea
+          rows={2}
+          value={resources}
+          onChange={(e) => set("resources", e.target.value)}
+          className="w-full text-sm border rounded px-3 py-2 outline-none focus:ring-1 resize-none"
+          style={{ borderColor: "#d1d5db" }}
+          placeholder="e.g. MyFuture website, TAFE NSW open days, school counsellor…"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">Target Completion Date</label>
+        <input
+          type="date"
+          value={deadline}
+          onChange={(e) => set("deadline", e.target.value)}
+          className="text-sm border rounded px-3 py-1.5 outline-none focus:ring-1"
+          style={{ borderColor: "#d1d5db" }}
+        />
+      </div>
+
+      {!student.email && (
+        <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+          No email address on file — add one via the import spreadsheet to enable email sending.
+        </p>
+      )}
     </div>
   );
 }
@@ -418,7 +601,6 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
 
   return (
     <div className="space-y-3">
-      {/* Note thread */}
       <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
         {notes.length === 0 && (
           <p className="text-xs text-gray-400 italic">No notes yet.</p>
@@ -439,7 +621,6 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
         ))}
       </div>
 
-      {/* New note form */}
       <form onSubmit={handleSubmit} className="space-y-2">
         <textarea
           rows={3}
@@ -476,7 +657,7 @@ function NotesPanel({ studentId, initialNotes }: { studentId: number; initialNot
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-const TAB_NAMES = ["Consultation", "Career Aspirations", "Pathway Awareness", "Referrals", "Outcomes"];
+const TAB_NAMES = ["Consultation", "Career Aspirations", "Pathway Awareness", "Referrals", "Outcomes", "Action Plan"];
 
 export function InterviewStudentClient({ student }: { student: Student }) {
   const [activeTab, setActiveTab] = useState(0);
@@ -499,7 +680,6 @@ export function InterviewStudentClient({ student }: { student: Student }) {
 
   return (
     <div className="max-w-5xl mx-auto py-6">
-      {/* Back + header */}
       <div className="mb-6">
         <a
           href="/interview-notes"
@@ -520,11 +700,9 @@ export function InterviewStudentClient({ student }: { student: Student }) {
         </p>
       </div>
 
-      {/* Two-column layout */}
       <div className="flex gap-6 flex-col lg:flex-row">
         {/* Left: Checklist tabs */}
         <div className="flex-1 min-w-0 rounded-xl overflow-hidden" style={{ border: "1px solid #afa9ec", boxShadow: "0 1px 4px rgba(61,44,141,0.08)" }}>
-          {/* Tab nav */}
           <div className="flex border-b overflow-x-auto" style={{ borderColor: "#afa9ec", backgroundColor: "#f5f4fe" }}>
             {TAB_NAMES.map((name, i) => (
               <button
@@ -540,16 +718,15 @@ export function InterviewStudentClient({ student }: { student: Student }) {
             ))}
           </div>
 
-          {/* Tab content */}
           <div className="bg-white p-4">
             {activeTab === 0 && <Tab1 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 1 && <Tab2 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 2 && <Tab3 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 3 && <Tab4 data={checklistData} onChange={setChecklistData} />}
             {activeTab === 4 && <Tab5 data={checklistData} onChange={setChecklistData} />}
+            {activeTab === 5 && <Tab6 data={checklistData} onChange={setChecklistData} student={student} />}
           </div>
 
-          {/* Save button */}
           <div className="px-4 py-3 border-t flex justify-end" style={{ borderColor: "#eeedfe" }}>
             <button
               onClick={handleSaveChecklist}
@@ -557,7 +734,7 @@ export function InterviewStudentClient({ student }: { student: Student }) {
               className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-colors"
               style={{ backgroundColor: "#3d2c8d" }}
             >
-              {saving ? "Saving…" : "Save Checklist"}
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </div>
