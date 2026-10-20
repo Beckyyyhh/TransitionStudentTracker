@@ -154,6 +154,8 @@ function fmtVal(v: unknown): string {
   return String(v);
 }
 
+const BOOLEAN_WE_FIELDS = new Set(["weSPR", "weMyWorkExperience", "weMedicalDocs", "weWorkplaceVisited", "weSafetyGuideParent", "weSafetyGuideEmployer"]);
+
 function buildChangeSummary(before: Record<string, unknown>, after: Record<string, unknown>): string {
   const FIELD_LABELS: Record<string, string> = {
     title: "Title",
@@ -177,13 +179,19 @@ function buildChangeSummary(before: Record<string, unknown>, after: Record<strin
   const lines: string[] = [];
   for (const key of Object.keys(after)) {
     if (!(key in before)) continue;
-    const oldVal = before[key];
-    const newVal = after[key];
+    let oldVal = before[key];
+    let newVal = after[key];
+    // Treat null/undefined as false for boolean WE checklist fields so that
+    // a DB null vs form-submitted false doesn't generate a spurious change note.
+    if (BOOLEAN_WE_FIELDS.has(key)) {
+      oldVal = !!oldVal;
+      newVal = !!newVal;
+    }
     if (oldVal === newVal) continue;
     const label = FIELD_LABELS[key] ?? key;
     if (key === "status") {
-      lines.push(`${label}: ${STATUS_LABELS[String(oldVal)] ?? oldVal} → ${STATUS_LABELS[String(newVal)] ?? newVal}`);
-    } else if (typeof newVal === "boolean") {
+      lines.push(`${label}: ${STATUS_LABELS[String(before[key])] ?? before[key]} → ${STATUS_LABELS[String(after[key])] ?? after[key]}`);
+    } else if (BOOLEAN_WE_FIELDS.has(key)) {
       lines.push(`${label}: ${fmtVal(newVal)}`);
     } else {
       lines.push(`${label}: ${fmtVal(oldVal)} → ${fmtVal(newVal)}`);
@@ -300,12 +308,11 @@ export async function resetWorkExperienceOrder() {
 
 export async function addTaskNote(taskId: number, content: string) {
   await prisma.taskNote.create({ data: { taskId, content } });
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (task) {
-    revalidatePath(`/students/${task.studentId}`);
-    revalidatePath("/tasks");
-    revalidatePath("/history");
-  }
+  // Bump updatedAt so the task floats to the top of the History tab
+  const task = await prisma.task.update({ where: { id: taskId }, data: { updatedAt: new Date() } });
+  revalidatePath(`/students/${task.studentId}`);
+  revalidatePath("/tasks");
+  revalidatePath("/history");
 }
 
 export async function getTaskNotes(taskId: number) {
